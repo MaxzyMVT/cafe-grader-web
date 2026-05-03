@@ -58,6 +58,7 @@ gem install bundler --no-document
 # 3. MySQL — configure for remote connections from worker nodes
 # ---------------------------------------------------------------
 echo "[3/5] Configuring MySQL for remote access..."
+sudo systemctl start mysql || sudo service mysql start
 
 # Allow all interfaces (lock down with firewall rules, not bind-address)
 sudo sed -i 's/^bind-address\s*=.*/bind-address = 0.0.0.0/' \
@@ -113,6 +114,7 @@ sudo tee /etc/systemd/system/solid_queue.service > /dev/null <<EOF
 [Unit]
 Description=Solid Queue for Cafe-Grader
 After=network.target mysql.service
+Wants=mysql.service
 
 [Service]
 User=$LINUX_USER

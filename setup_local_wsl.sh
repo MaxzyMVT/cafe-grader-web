@@ -100,7 +100,7 @@ bundle exec rails dartsass:build
 # 6. Start MySQL and create the database user
 # ---------------------------------------------------------------
 echo "[6/6] Starting MySQL and creating database user..."
-sudo service mysql start
+sudo service mysql start || sudo systemctl start mysql
 
 sudo mysql -u root -e "DROP USER IF EXISTS '$DB_USER'@'localhost';"
 sudo mysql -u root -e "CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';"

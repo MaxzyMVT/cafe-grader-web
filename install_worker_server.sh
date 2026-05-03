@@ -29,12 +29,12 @@ echo "[1/6] Installing system dependencies..."
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y \
   git software-properties-common \
-  libmysqlclient-dev libcap-dev libsystemd-dev \
+  libmysqlclient-dev libcap-dev libsystemd-dev libseccomp-dev pkg-config \
   curl unzip
 
 # Language compilers / runtimes
 sudo apt install -y \
-  ghc g++ openjdk-18-jdk fpc \
+  ghc g++ openjdk-21-jdk fpc \
   php-cli php-readline \
   golang-go cargo python3-venv
 

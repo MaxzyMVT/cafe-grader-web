@@ -24,14 +24,14 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y \
   apache2 apache2-dev \
   mysql-server git software-properties-common \
-  libmysqlclient-dev libcap-dev libsystemd-dev \
+  libmysqlclient-dev libcap-dev libsystemd-dev libseccomp-dev pkg-config \
   apt-transport-https \
   postgresql postgresql-server-dev-all \
   unzip curl
 
 # Language compilers / runtimes
 sudo apt install -y \
-  ghc g++ openjdk-18-jdk fpc \
+  ghc g++ openjdk-21-jdk fpc \
   php-cli php-readline \
   golang-go cargo python3-venv
 
@@ -65,6 +65,7 @@ gem install bundler --no-document
 # 3. MySQL Setup
 # ---------------------------------------------------------------
 echo "[3/8] Setting up MySQL databases and user..."
+sudo systemctl start mysql || sudo service mysql start
 sudo mysql -u root -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\`;"
 sudo mysql -u root -e "CREATE DATABASE IF NOT EXISTS \`$DB_QUEUE\`;"
 sudo mysql -u root -e "DROP USER IF EXISTS '$DB_USER'@'localhost';"
@@ -158,6 +159,7 @@ sudo tee /etc/systemd/system/solid_queue.service > /dev/null <<EOF
 [Unit]
 Description=Solid Queue for Cafe-Grader
 After=network.target mysql.service
+Wants=mysql.service
 
 [Service]
 User=$LINUX_USER
