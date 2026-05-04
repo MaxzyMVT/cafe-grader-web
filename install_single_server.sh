@@ -73,7 +73,6 @@ rbenv install -s "$RUBY_VERSION"
 rbenv global "$RUBY_VERSION"
 
 # Remove stale system-level gem stubs that conflict with rbenv-managed Ruby.
-# Without this, bundler prints "missing extensions" warnings for every gem.
 if [ -d "$HOME/.gem/ruby" ]; then
   rm -rf "$HOME/.gem/ruby"
 fi
@@ -97,7 +96,7 @@ sudo mysql -u root -e "FLUSH PRIVILEGES;"
 # 4. ioi/isolate
 # ---------------------------------------------------------------
 echo "[4/13] Building and installing ioi/isolate..."
-if [ ! -d "/tmp/isolate" ]; then
+if[ ! -d "/tmp/isolate" ]; then
   git clone https://github.com/ioi/isolate.git /tmp/isolate
 fi
 cd /tmp/isolate
@@ -178,7 +177,6 @@ cd web
 [ ! -f config/llm.yml ]        && cp config/llm.yml.SAMPLE        config/llm.yml
 
 # Always regenerate and patch database.yml.
-# SAMPLE defaults to  username: grader / password: grader  which will fail db:setup.
 cp config/database.yml.SAMPLE config/database.yml
 sed -i "s/username:.*/username: $DB_USER/" config/database.yml
 sed -i "s/password:.*/password: $DB_PASS/" config/database.yml
@@ -191,8 +189,6 @@ sed -i "s|web:.*|web: http://localhost|" config/worker.yml
 echo "  worker.yml patched (web: http://localhost)."
 
 # Silence Dart Sass @import deprecation warnings from Bootstrap.
-# sass-embedded >=1.56 supports per-flag silencing via --silence-deprecation=<id>.
-# This file appends to build_options after the existing dartsass.rb initializer runs.
 cat > config/initializers/dartsass_silence_deprecations.rb <<'RUBYEOF'
 Rails.application.config.dartsass.build_options \
   << "--silence-deprecation=import" \
@@ -209,7 +205,6 @@ bundle install
 # ---------------------------------------------------------------
 echo "[8/13] Generating Rails master key..."
 if [ ! -f config/master.key ]; then
-  # credentials.yml.SAMPLE contains placeholder values — sufficient to boot.
   cp config/credentials.yml.SAMPLE config/credentials.yml.enc
   openssl rand -hex 32 > config/master.key
   chmod 600 config/master.key
@@ -223,7 +218,6 @@ fi
 # 9. Python venv for grader engine
 # ---------------------------------------------------------------
 echo "[9/13] Creating Python venv at /venv/grader..."
-# worker.yml points compiler.python to /venv/grader/bin/python3
 if [ ! -d "/venv/grader" ]; then
   sudo python3 -m venv /venv/grader
   sudo /venv/grader/bin/pip install --upgrade pip --quiet
@@ -237,8 +231,24 @@ fi
 # ---------------------------------------------------------------
 echo "[10/13] Initialising database and compiling assets..."
 cd "$APP_DIR"
-RAILS_ENV=production bundle exec rails db:setup DISABLE_DATABASE_ENVIRONMENT_CHECK=1
-RAILS_ENV=production bundle exec rails db:seed
+
+# Check if tables exist. If rerunning, db:setup tries to drop tables and crashes on Foreign Keys.
+# This check ensures it safely runs db:migrate instead if data already exists.
+TABLE_COUNT=$(sudo mysql -u root -N -B -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DB_NAME';")
+TABLE_COUNT=${TABLE_COUNT:-0}
+
+if[ "$TABLE_COUNT" -eq 0 ]; then
+  echo "  Database is empty. Loading schema (db:setup)..."
+  RAILS_ENV=production bundle exec rails db:setup DISABLE_DATABASE_ENVIRONMENT_CHECK=1
+else
+  echo "  Database already has tables. Running migrations (db:migrate) to prevent FK crashes..."
+  RAILS_ENV=production bundle exec rails db:migrate
+fi
+
+echo "  Seeding default data..."
+RAILS_ENV=production bundle exec rails db:seed || true
+
+echo "  Building assets..."
 RAILS_ENV=production bundle exec rails dartsass:build
 RAILS_ENV=production bundle exec rails assets:precompile
 echo "  Database and assets ready."
@@ -252,7 +262,7 @@ gem install passenger --no-document
 # Build Apache module
 PASSENGER_INSTALL=$(gem contents passenger 2>/dev/null \
   | grep "passenger-install-apache2-module$" | head -1)
-if [ -n "$PASSENGER_INSTALL" ]; then
+if[ -n "$PASSENGER_INSTALL" ]; then
   sudo "$(which ruby)" "$PASSENGER_INSTALL" --auto --languages ruby
 else
   passenger-install-apache2-module --auto --languages ruby
@@ -338,9 +348,7 @@ sudo tee /etc/systemd/system/cafe_grader_startup.service > /dev/null <<EOF
 [Unit]
 Description=Start Cafe-Grader grader workers after reboot
 After=network.target mysql.service solid_queue.service
-Wants=mysql.service
-
-[Service]
+Wants=mysql.service[Service]
 Type=oneshot
 User=$LINUX_USER
 WorkingDirectory=$APP_DIR
