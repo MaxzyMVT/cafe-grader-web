@@ -282,24 +282,31 @@ else
 fi
 
 PASSENGER_ROOT=$(passenger-config --root)
-PASSENGER_RUBY=$(which ruby)
+# Use rbenv's resolved ruby path — `which ruby` returns the shim and Apache
+# needs the real absolute binary path to start workers correctly.
+PASSENGER_RUBY="$RBENV_RUBY"
 PASSENGER_MODULE=$(find "$PASSENGER_ROOT" -name mod_passenger.so 2>/dev/null | head -1)
 
 if [ -z "$PASSENGER_MODULE" ]; then
-  echo "  WARNING: mod_passenger.so not found — Apache module may need manual setup."
-  echo "  See: https://www.phusionpassenger.com/docs/tutorials/deploy_to_production/"
-else
-  sudo tee /etc/apache2/mods-available/passenger.load > /dev/null <<EOF
+  echo "  ERROR: mod_passenger.so not found. Passenger build may have failed."
+  echo "  Check output above for compilation errors."
+  exit 1
+fi
+
+# The passenger installer already ran a2enmod, but the .load/.conf files it
+# writes may not match our rbenv ruby path. Overwrite them with correct values.
+sudo tee /etc/apache2/mods-available/passenger.load > /dev/null <<EOF
 LoadModule passenger_module $PASSENGER_MODULE
 EOF
-  sudo tee /etc/apache2/mods-available/passenger.conf > /dev/null <<EOF
+sudo tee /etc/apache2/mods-available/passenger.conf > /dev/null <<EOF
 <IfModule mod_passenger.c>
   PassengerRoot $PASSENGER_ROOT
   PassengerDefaultRuby $PASSENGER_RUBY
 </IfModule>
 EOF
-  sudo a2enmod passenger
-fi
+
+# Ensure the module is enabled (idempotent — safe to run even if already enabled).
+sudo a2enmod passenger
 
 sudo a2dissite 000-default 2>/dev/null || true
 sudo tee /etc/apache2/sites-available/cafe_grader.conf > /dev/null <<EOF
@@ -323,6 +330,20 @@ sudo tee /etc/apache2/sites-available/cafe_grader.conf > /dev/null <<EOF
 EOF
 
 sudo a2ensite cafe_grader
+
+# Validate config before restarting — surfaces errors with clear diagnostics
+# instead of crashing Apache silently.
+echo "  Validating Apache configuration..."
+if ! sudo apache2ctl configtest 2>&1; then
+  echo ""
+  echo "  ERROR: Apache config test failed. Dumping passenger module paths:"
+  echo "    PASSENGER_MODULE=$PASSENGER_MODULE"
+  echo "    PASSENGER_ROOT=$PASSENGER_ROOT"
+  echo "    PASSENGER_RUBY=$PASSENGER_RUBY"
+  echo "  Fix the errors above before restarting Apache."
+  exit 1
+fi
+
 sudo systemctl restart apache2
 echo "  Apache + Passenger configured."
 
