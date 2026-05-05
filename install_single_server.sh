@@ -322,7 +322,7 @@ sudo tee /etc/apache2/sites-available/cafe_grader.conf > /dev/null <<EOF
 
   PassengerEnabled on
   PassengerRuby $PASSENGER_RUBY
-  PassengerEnvVar RAILS_ENV production
+  PassengerAppEnv production
 
   ErrorLog \${APACHE_LOG_DIR}/cafe_grader_error.log
   CustomLog \${APACHE_LOG_DIR}/cafe_grader_access.log combined
