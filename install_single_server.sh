@@ -405,12 +405,14 @@ sudo systemctl daemon-reload
 sudo systemctl enable solid_queue.service
 
 # ---------------------------------------------------------------
-# 13. Post-reboot service: grader workers + whenever crontab
+# 13. Two services: crontab setup (oneshot) + persistent grader workers
 # ---------------------------------------------------------------
-echo "[13/13] Installing post-reboot grader startup service..."
+echo "[13/13] Installing grader worker and crontab services..."
+
+# 13a. Oneshot — updates the whenever crontab after boot.
 sudo tee /etc/systemd/system/cafe_grader_startup.service > /dev/null <<EOF
 [Unit]
-Description=Start Cafe-Grader grader workers after reboot
+Description=Update Cafe-Grader crontab after reboot
 After=network.target mysql.service solid_queue.service
 Wants=mysql.service
 
@@ -418,7 +420,6 @@ Wants=mysql.service
 Type=oneshot
 User=$LINUX_USER
 WorkingDirectory=$APP_DIR
-ExecStart=/bin/bash -lc 'RAILS_ENV=production bundle exec rails r "Grader.restart($WORKER_COUNT)"'
 ExecStart=/bin/bash -lc 'bundle exec whenever --update-crontab'
 RemainAfterExit=yes
 StandardOutput=journal
@@ -428,9 +429,32 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 
+# 13b. Persistent — keeps grader workers alive.
+# Restart=always means systemd re-launches if workers crash.
+sudo tee /etc/systemd/system/cafe_grader_workers.service > /dev/null <<EOF
+[Unit]
+Description=Cafe-Grader grader workers
+After=network.target mysql.service solid_queue.service cafe_grader_startup.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=$LINUX_USER
+WorkingDirectory=$APP_DIR
+ExecStart=/bin/bash -lc 'RAILS_ENV=production bundle exec rails r "Grader.restart($WORKER_COUNT)"; sleep infinity'
+Environment=RAILS_ENV=production
+Restart=always
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 sudo systemctl daemon-reload
 sudo systemctl enable cafe_grader_startup.service
-
+sudo systemctl enable cafe_grader_workers.service
 # ---------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------
