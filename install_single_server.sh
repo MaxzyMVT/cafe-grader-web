@@ -381,6 +381,13 @@ echo "  Apache + Passenger configured."
 # 12. Solid Queue systemd service
 # ---------------------------------------------------------------
 echo "[12/13] Installing Solid Queue systemd service..."
+
+# Resolve absolute paths at install time — written into the unit file so
+# systemd never goes through bash login shells (which load RVM and override
+# our rbenv ruby).
+RBENV_RUBY_BIN="$(rbenv which ruby)"
+RBENV_BUNDLE_BIN="$(rbenv which bundle)"
+
 sudo tee /etc/systemd/system/solid_queue.service > /dev/null <<EOF
 [Unit]
 Description=Solid Queue for Cafe-Grader
@@ -390,8 +397,10 @@ Wants=mysql.service
 [Service]
 User=$LINUX_USER
 WorkingDirectory=$APP_DIR
-ExecStart=/bin/bash -lc 'bundle exec rails solid_queue:start'
+# Use absolute rbenv ruby path — avoids RVM login shell interference.
+ExecStart=$RBENV_BUNDLE_BIN exec rails solid_queue:start
 Environment=RAILS_ENV=production
+Environment=PATH=$HOME/.rbenv/shims:$HOME/.rbenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 Restart=on-failure
 RestartSec=5s
 StandardOutput=journal
@@ -405,14 +414,14 @@ sudo systemctl daemon-reload
 sudo systemctl enable solid_queue.service
 
 # ---------------------------------------------------------------
-# 13. Two services: crontab setup (oneshot) + persistent grader workers
+# 13. Grader workers + whenever crontab
 # ---------------------------------------------------------------
-echo "[13/13] Installing grader worker and crontab services..."
+echo "[13/13] Installing grader services..."
 
-# 13a. Oneshot — updates the whenever crontab after boot.
+# 13a. Oneshot — updates the whenever crontab only.
 sudo tee /etc/systemd/system/cafe_grader_startup.service > /dev/null <<EOF
 [Unit]
-Description=Update Cafe-Grader crontab after reboot
+Description=Update Cafe-Grader whenever crontab after reboot
 After=network.target mysql.service solid_queue.service
 Wants=mysql.service
 
@@ -420,7 +429,9 @@ Wants=mysql.service
 Type=oneshot
 User=$LINUX_USER
 WorkingDirectory=$APP_DIR
-ExecStart=/bin/bash -lc 'bundle exec whenever --update-crontab'
+ExecStart=$RBENV_BUNDLE_BIN exec whenever --update-crontab
+Environment=RAILS_ENV=production
+Environment=PATH=$HOME/.rbenv/shims:$HOME/.rbenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 RemainAfterExit=yes
 StandardOutput=journal
 StandardError=journal
@@ -429,8 +440,12 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 
-# 13b. Persistent — keeps grader workers alive.
-# Restart=always means systemd re-launches if workers crash.
+# 13b. Grader workers — Grader.restart() spawns detached child processes
+# that write to log/grader-N.txt and keep running independently.
+# This service fires Grader.restart() using the absolute rbenv ruby (no
+# login shell = no RVM) and then watches the log files so systemd has a
+# long-running foreground process to supervise. If the workers die the
+# tail exits, Restart=always re-fires Grader.restart() after 30s.
 sudo tee /etc/systemd/system/cafe_grader_workers.service > /dev/null <<EOF
 [Unit]
 Description=Cafe-Grader grader workers
@@ -441,10 +456,12 @@ Wants=mysql.service
 Type=simple
 User=$LINUX_USER
 WorkingDirectory=$APP_DIR
-ExecStart=/bin/bash -lc 'RAILS_ENV=production bundle exec rails r "Grader.restart($WORKER_COUNT)"; sleep infinity'
+ExecStart=$RBENV_BUNDLE_BIN exec rails runner "Grader.restart($WORKER_COUNT)"
 Environment=RAILS_ENV=production
-Restart=always
-RestartSec=10s
+Environment=PATH=$HOME/.rbenv/shims:$HOME/.rbenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# Grader.restart() returns immediately after spawning workers.
+# RemainAfterExit lets systemd treat the service as "active" after that.
+RemainAfterExit=yes
 StandardOutput=journal
 StandardError=journal
 
@@ -455,6 +472,7 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable cafe_grader_startup.service
 sudo systemctl enable cafe_grader_workers.service
+
 # ---------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------
