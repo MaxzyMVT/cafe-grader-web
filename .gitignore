@@ -69,7 +69,6 @@
 #!/app/assets/builds/.keep
 
 # vscode workspace
-<<<<<<< HEAD
 /.vscode
 
 # migrate_2023 runtime artifacts (anomaly log, captured baseline,
@@ -78,11 +77,3 @@
 /script/migrate_2023/sanity_baseline.json
 /script/migrate_2023/sanity_report_*
 /script/migrate_2023/test_v2_report_*
-||||||| 08d8f159
-/.vscode
-=======
-/.vscode
-
-# rails secrets
-/config/master.key
->>>>>>> d2710c141974aeaa911e0d45cd4d4d2aa9ecb37e
