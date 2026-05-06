@@ -105,9 +105,9 @@
                 %span.mi.md-18 settings
           - if GraderConfiguration['point_hint.show_user_points']
             %li.nav-item.d-flex.align-items-center.mx-2
-              %span.badge.bg-success.rounded-pill.d-flex.align-items-center.gap-2.px-3{style: 'padding-top: 0.5rem; padding-bottom: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.15);'}
-                %span.mi.md-18{style: 'line-height: 1;'} monetization_on
-                %span.fw-bold{style: 'line-height: 1; padding-top: 1px;'}
+              %span.badge.bg-success.rounded-pill.d-inline-flex.align-items-center.gap-2.px-3{style: 'height: 32px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);'}
+                %span.mi.md-18{style: 'line-height: 1; margin-top: -1px;'} stars
+                %span.fw-bold{style: 'line-height: 1;'}
                   = "Points: #{number_with_precision(@current_user.current_score, precision: 2, strip_insignificant_zeros: true)}"
           %li.nav-item.d-flex.align-items-center
             %a.nav-link.link-flex.gap-2{href: logout_main_path}
