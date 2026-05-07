@@ -27,6 +27,10 @@
   --bs-warning-rgb: 217, 119, 6;
   --bs-info: #0284c7;
   --bs-info-rgb: 2, 132, 199;
+  --bs-light: #e0f2fe;
+  --bs-light-rgb: 224, 242, 254;
+  --bs-dark: #0e7490;
+  --bs-dark-rgb: 14, 116, 144;
 
   // Custom property overrides from globals.scss
   --color-primary: #0891b2;
@@ -60,9 +64,16 @@
   background-color: #f0f9ff !important;
   color: #1a3a4a;
 
+  // Hardcoded fixes
+  .bg-white { background-color: #ffffff !important; }
+  .bg-light { background-color: #f0f9ff !important; }
+  .text-dark { color: #0f172a !important; }
+  .text-secondary { color: #475569 !important; }
+
   .navbar {
     background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%) !important;
     .navbar-brand, .nav-link, .mi { color: #fff !important; }
+    .dropdown-menu { .dropdown-item:hover { background-color: #ecfeff; color: #0891b2; } }
   }
 
   // Headings
@@ -73,21 +84,23 @@
   // Buttons
   .btn-primary { background-color: #0891b2 !important; border-color: #0891b2 !important; color: #fff !important; }
   .btn-primary:hover { background-color: #0e7490 !important; border-color: #0e7490 !important; }
-  .btn-success { color: #fff; }
-  .btn-danger { color: #fff; }
+  .btn-success { color: #fff !important; }
+  .btn-danger { color: #fff !important; }
+  .btn-warning { color: #fff !important; }
+  .btn-secondary { color: #fff !important; }
 
   // Cards
   .card {
-    background-color: #ffffff;
-    border-color: #bae6fd;
-    box-shadow: 0 4px 12px rgba(14, 116, 144, 0.05);
-    .card-header { background-color: #ecfeff !important; border-bottom: 1px solid #bae6fd; color: #0e7490; font-weight: 600; }
+    background-color: #ffffff !important;
+    border-color: #bae6fd !important;
+    box-shadow: 0 4px 12px rgba(14, 116, 144, 0.05) !important;
+    .card-header { background-color: #ecfeff !important; border-bottom: 1px solid #bae6fd !important; color: #0e7490 !important; font-weight: 600 !important; }
   }
 
   // Forms
   .form-control, .form-select {
-    border-color: #bae6fd;
-    &:focus { border-color: #0891b2; box-shadow: 0 0 0 0.25rem rgba(8, 145, 178, 0.15); }
+    border-color: #bae6fd !important;
+    &:focus { border-color: #0891b2 !important; box-shadow: 0 0 0 0.25rem rgba(8, 145, 178, 0.15) !important; }
   }
 
   // Tables
@@ -96,21 +109,24 @@
     --bs-table-striped-bg: #f8fafc;
     --bs-table-hover-bg: #ecfeff;
     --bs-table-border-color: #bae6fd;
-    thead th { background-color: #f0f9ff; color: #0e7490; border-bottom: 2px solid #bae6fd; }
+    thead th { background-color: #f0f9ff !important; color: #0e7490 !important; border-bottom: 2px solid #bae6fd !important; }
   }
 
   // Alerts
-  .alert-primary { background-color: #e0f2fe; border-color: #bae6fd; color: #0369a1; }
-  .alert-success { background-color: #d1fae5; border-color: #6ee7b7; color: #065f46; }
-  .alert-danger { background-color: #fee2e2; border-color: #fca5a5; color: #991b1b; }
-  .alert-secondary { background-color: #f1f5f9; border-color: #e2e8f0; color: #475569; }
+  .alert-primary { background-color: #e0f2fe !important; border-color: #bae6fd !important; color: #0369a1 !important; }
+  .alert-success { background-color: #d1fae5 !important; border-color: #6ee7b7 !important; color: #065f46 !important; }
+  .alert-danger { background-color: #fee2e2 !important; border-color: #fca5a5 !important; color: #991b1b !important; }
 
   // Badges
   .badge {
     &.bg-primary { background-color: #0891b2 !important; color: #fff !important; }
     &.bg-success { background-color: #059669 !important; color: #fff !important; }
     &.bg-light { background-color: #e0f2fe !important; color: #0369a1 !important; }
+    &.bg-warning { color: #fff !important; }
   }
+
+  // Progress
+  .bg-secondary-subtle { background-color: #e0f2fe !important; }
 
   // Footer
   .footer { background-color: #ecfeff !important; border-top: 1px solid #bae6fd !important; }

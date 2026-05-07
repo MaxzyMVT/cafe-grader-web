@@ -27,6 +27,10 @@
   --bs-warning-rgb: 181, 137, 0;
   --bs-info: #2aa198;
   --bs-info-rgb: 42, 161, 152;
+  --bs-light: #eee8d5;
+  --bs-light-rgb: 238, 232, 213;
+  --bs-dark: #073642;
+  --bs-dark-rgb: 7, 54, 66;
 
   // Custom property overrides from globals.scss
   --color-primary: #268bd2;
@@ -60,37 +64,45 @@
   background-color: #fdf6e3 !important;
   color: #586e75;
 
+  // Hardcoded fixes
+  .bg-white { background-color: #fdf6e3 !important; }
+  .bg-light { background-color: #eee8d5 !important; }
+  .text-dark { color: #073642 !important; }
+  .text-secondary { color: #839496 !important; }
+
   .navbar {
     background-color: #073642 !important;
     .navbar-brand, .nav-link, .mi { color: #93a1a1 !important; }
     .nav-link:hover { color: #fdf6e3 !important; }
+    .dropdown-menu { background-color: #eee8d5; .dropdown-item { color: #586e75; &:hover { background-color: #fdf6e3; } } }
   }
 
   // Headings
   h1 { color: #b58900 !important; }
   h2 { color: #cb4b16 !important; }
   h3, h4, h5, h6 { color: #657b83 !important; }
-  .text-dark { color: #073642 !important; }
 
   // Buttons
   .btn-primary { background-color: #268bd2 !important; border-color: #268bd2 !important; color: #fff !important; }
   .btn-success { background-color: #859900 !important; border-color: #859900 !important; color: #fff !important; }
   .btn-danger { background-color: #dc322f !important; border-color: #dc322f !important; color: #fff !important; }
-  .btn-light { background-color: #eee8d5; border-color: #ddd6c1; color: #586e75; }
+  .btn-warning { background-color: #b58900 !important; border-color: #b58900 !important; color: #fff !important; }
+  .btn-light { background-color: #eee8d5 !important; border-color: #ddd6c1 !important; color: #586e75 !important; }
+  .btn-secondary { color: #fff !important; }
 
   // Cards
   .card {
-    background-color: #fdf6e3;
-    border-color: #eee8d5;
-    .card-header { background-color: #eee8d5 !important; border-bottom: 1px solid #ddd6c1; color: #657b83; font-weight: 600; }
+    background-color: #fdf6e3 !important;
+    border-color: #eee8d5 !important;
+    .card-header { background-color: #eee8d5 !important; border-bottom: 1px solid #ddd6c1 !important; color: #657b83 !important; font-weight: 600 !important; }
   }
 
   // Forms
   .form-control, .form-select {
-    background-color: #fdf6e3;
-    border-color: #ddd6c1;
-    color: #586e75;
-    &:focus { background-color: #fff; border-color: #b58900; box-shadow: 0 0 0 0.25rem rgba(181, 137, 0, 0.1); }
+    background-color: #fdf6e3 !important;
+    border-color: #ddd6c1 !important;
+    color: #586e75 !important;
+    &:focus { background-color: #fff !important; border-color: #b58900 !important; box-shadow: 0 0 0 0.25rem rgba(181, 137, 0, 0.1) !important; }
   }
 
   // Tables
@@ -99,21 +111,24 @@
     --bs-table-striped-bg: #f5efd7;
     --bs-table-hover-bg: #eee8d5;
     --bs-table-border-color: #eee8d5;
-    thead th { background-color: #eee8d5; color: #657b83; border-bottom: 2px solid #ddd6c1; }
+    thead th { background-color: #eee8d5 !important; color: #657b83 !important; border-bottom: 2px solid #ddd6c1 !important; }
   }
 
   // Alerts
-  .alert-primary { background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
-  .alert-success { background-color: #e2eebc; border-color: #d1e0a3; color: #3d4900; }
-  .alert-danger { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
-  .alert-secondary { background-color: #eee8d5; border-color: #ddd6c1; color: #586e75; }
+  .alert-primary { background-color: #d1ecf1 !important; border-color: #bee5eb !important; color: #0c5460 !important; }
+  .alert-success { background-color: #e2eebc !important; border-color: #d1e0a3 !important; color: #3d4900 !important; }
+  .alert-danger { background-color: #f8d7da !important; border-color: #f5c6cb !important; color: #721c24 !important; }
 
   // Badges
   .badge {
     &.bg-primary { background-color: #268bd2 !important; color: #fff !important; }
     &.bg-success { background-color: #859900 !important; color: #fff !important; }
     &.bg-light { background-color: #eee8d5 !important; color: #586e75 !important; }
+    &.bg-warning { color: #fff !important; }
   }
+
+  // Progress
+  .bg-secondary-subtle { background-color: #eee8d5 !important; }
 
   // Footer
   .footer { background-color: #eee8d5 !important; border-top: 1px solid #ddd6c1 !important; }
