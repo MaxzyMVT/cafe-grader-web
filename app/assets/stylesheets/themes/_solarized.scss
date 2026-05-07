@@ -8,7 +8,7 @@
   --bs-body-bg: #fdf6e3;
   --bs-body-color: #586e75;
   --bs-border-color: #eee8d5;
-  --bs-card-bg: #fdf6e3;
+  --bs-card-bg: rgba(253, 246, 227, 0.9);
   --bs-card-border-color: #eee8d5;
   --bs-secondary-bg: #eee8d5;
   --bs-tertiary-bg: #f5efd7;
@@ -46,8 +46,8 @@
   --color-text-light: #93a1a1;
   --color-text-slate: #586e75;
   --color-bg-main: #fdf6e3;
-  --color-surface: #fdf6e3;
-  --color-surface-hover: #eee8d5;
+  --color-surface: rgba(253, 246, 227, 0.9);
+  --color-surface-hover: rgba(238, 232, 213, 0.95);
   --color-surface-alt: #f5efd7;
   --color-surface-gray: #eee8d5;
   --color-border-light: #eee8d5;
@@ -85,7 +85,8 @@
 
   // Global Dropdown Override
   .dropdown-menu {
-    background-color: #eee8d5 !important;
+    background-color: rgba(238, 232, 213, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
     border-color: #ddd6c1 !important;
     box-shadow: 0 10px 40px rgba(7, 54, 66, 0.1) !important;
     .dropdown-item {
@@ -97,7 +98,8 @@
   }
 
   .navbar {
-    background-color: #073642 !important;
+    background-color: rgba(7, 54, 66, 0.9) !important;
+    backdrop-filter: blur(10px);
     .navbar-brand, .nav-link, .mi, .nav-link .mi { color: #93a1a1 !important; }
     .nav-link:hover { color: #fdf6e3 !important; }
   }
@@ -108,7 +110,10 @@
   h3, h4, h5, h6 { color: #657b83 !important; }
 
   // Buttons
-  .btn-primary { background-color: #268bd2 !important; border-color: #268bd2 !important; color: #fff !important; }
+  .btn-primary { 
+    background-color: #268bd2 !important; border-color: #268bd2 !important; color: #fff !important; 
+    &:hover { background-color: #2aa198 !important; border-color: #2aa198 !important; }
+  }
   .btn-success { background-color: #859900 !important; border-color: #859900 !important; color: #fff !important; }
   .btn-danger { background-color: #dc322f !important; border-color: #dc322f !important; color: #fff !important; }
   .btn-warning { background-color: #b58900 !important; border-color: #b58900 !important; color: #fff !important; }
@@ -117,9 +122,10 @@
 
   // Cards
   .card {
-    background-color: #fdf6e3 !important;
+    background-color: rgba(253, 246, 227, 0.9) !important;
+    backdrop-filter: blur(8px);
     border-color: #eee8d5 !important;
-    .card-header { background-color: #eee8d5 !important; border-bottom: 1px solid #ddd6c1 !important; color: #657b83 !important; font-weight: 600 !important; }
+    .card-header { background-color: rgba(238, 232, 213, 0.6) !important; border-bottom: 1px solid #ddd6c1 !important; color: #657b83 !important; font-weight: 600 !important; }
   }
 
   // Forms
@@ -132,9 +138,9 @@
 
   // Tables
   .table {
-    --bs-table-bg: #fdf6e3;
-    --bs-table-striped-bg: #f5efd7;
-    --bs-table-hover-bg: #eee8d5;
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(245, 239, 215, 0.5);
+    --bs-table-hover-bg: rgba(238, 232, 213, 0.7);
     --bs-table-border-color: #eee8d5;
     thead th { background-color: #eee8d5 !important; color: #657b83 !important; border-bottom: 2px solid #ddd6c1 !important; }
   }

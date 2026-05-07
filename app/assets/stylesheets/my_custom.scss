@@ -96,6 +96,37 @@ body {
   padding: 5px;
   padding-top: 65px;
   padding-bottom: 50px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+// Global interactive touches
+.card {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease !important;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
+  }
+}
+
+.btn {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  &:hover:not(:disabled) {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+  &:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+  }
+}
+
+.form-control, .form-select {
+  transition: all 0.2s ease !important;
+}
+
+.navbar {
+  transition: all 0.3s ease !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .form-check-thick {
