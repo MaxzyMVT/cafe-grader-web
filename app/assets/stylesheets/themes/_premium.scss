@@ -40,10 +40,12 @@
   --color-primary-lightest: rgba(139, 92, 246, 0.2);
   --color-secondary: #7c3aed;
   --color-secondary-dark: #5b21b6;
+  --color-secondary-light: #a78bfa;
   --color-text-main: #e8e8f0;
   --color-text-muted: #9a8ec0;
   --color-text-dark: #ffffff;
   --color-text-light: #8a7eb0;
+  --color-text-slate: #9a8ec0;
   --color-bg-main: #0c0c1d;
   --color-surface: rgba(255, 255, 255, 0.05);
   --color-surface-hover: rgba(255, 255, 255, 0.1);
@@ -55,8 +57,12 @@
   --color-border-muted: rgba(255, 255, 255, 0.08);
   --color-border-gray: rgba(255, 255, 255, 0.12);
   --color-border-lightest: rgba(255, 255, 255, 0.05);
+  --color-border-bs: rgba(255, 255, 255, 0.1);
   --color-success-bg: rgba(16, 185, 129, 0.2);
   --color-danger-bg: rgba(239, 68, 68, 0.2);
+  --color-danger-light-bg: rgba(239, 68, 68, 0.15);
+  --color-danger-text: #ff7b7b;
+  --color-danger-text-alt: #ff9b9b;
   --color-highlight-blue: rgba(139, 92, 246, 0.15);
   --color-highlight-yellow: rgba(245, 158, 11, 0.15);
   --color-highlight-pink: rgba(236, 72, 153, 0.15);
@@ -78,12 +84,25 @@
   .text-dark { color: #ffffff !important; }
   .text-secondary { color: #9a8ec0 !important; }
 
+  // Global Dropdown Override
+  .dropdown-menu {
+    background: rgba(20, 15, 40, 0.95) !important;
+    backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+    .dropdown-item {
+      color: #d0c4f0 !important;
+      &:hover, &:focus { background: rgba(139, 92, 246, 0.15) !important; color: #ffffff !important; }
+      &.active { background: #8b5cf6 !important; color: #ffffff !important; }
+    }
+    .dropdown-divider { border-color: rgba(255, 255, 255, 0.1) !important; }
+  }
+
   .navbar {
     background: linear-gradient(135deg, #1a0533 0%, #2d1b69 50%, #1a3a5c 100%) !important;
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     .navbar-brand, .nav-link, .mi { color: #fff !important; }
-    .dropdown-menu { background: rgba(20, 15, 40, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); .dropdown-item { color: #d0c4f0; &:hover { background: rgba(139, 92, 246, 0.15); color: #fff; } } }
   }
 
   // Headings
@@ -99,10 +118,10 @@
     box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
     &:hover { box-shadow: 0 6px 25px rgba(139, 92, 246, 0.5); transform: translateY(-1px); }
   }
-  .btn-success { color: #fff !important; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2); }
-  .btn-danger { color: #fff !important; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2); }
+  .btn-success { background-color: #10b981 !important; color: #fff !important; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2); }
+  .btn-danger { background-color: #ef4444 !important; color: #fff !important; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2); }
   .btn-warning { color: #000 !important; background-color: #f59e0b !important; }
-  .btn-secondary { color: #fff !important; }
+  .btn-secondary { color: #fff !important; background-color: rgba(255, 255, 255, 0.1) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; }
   .btn-outline-light { color: #e8e8f0 !important; border-color: rgba(255, 255, 255, 0.2) !important; &:hover { background: rgba(255, 255, 255, 0.1) !important; } }
 
   // Cards
@@ -153,7 +172,11 @@
   }
 
   // Progress
-  .progress { background: rgba(255, 255, 255, 0.08) !important; .progress-bar { background: linear-gradient(90deg, #6c3ce0, #8b5cf6) !important; } }
+  .progress { 
+    background: rgba(255, 255, 255, 0.08) !important; 
+    .progress-bar:not([class*="bg-"]) { background: linear-gradient(90deg, #6c3ce0, #8b5cf6) !important; }
+    .progress-bar.bg-primary { background: linear-gradient(90deg, #6c3ce0, #8b5cf6) !important; }
+  }
   .bg-secondary-subtle { background-color: rgba(255, 255, 255, 0.08) !important; }
 
   // Select2 Fixes

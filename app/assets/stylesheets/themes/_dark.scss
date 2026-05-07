@@ -39,10 +39,12 @@
   --color-primary-lightest: #2d2d44;
   --color-secondary: #5b8def;
   --color-secondary-dark: #a0c4ff;
+  --color-secondary-light: #9ec5fe;
   --color-text-main: #e0e0e0;
   --color-text-muted: #8e99a4;
   --color-text-dark: #f0f0f0;
   --color-text-light: #6c757d;
+  --color-text-slate: #8e99a4;
   --color-bg-main: #1a1a2e;
   --color-surface: #16213e;
   --color-surface-hover: #1f2b47;
@@ -54,8 +56,13 @@
   --color-border-muted: #2d2d44;
   --color-border-gray: #3d3d5c;
   --color-border-lightest: #222240;
+  --color-border-bs: #2d2d44;
   --color-success-bg: #0d3320;
   --color-danger-bg: #3d1a1a;
+  --color-danger-light-bg: #3d1a1a;
+  --color-danger-text: #ff6b6b;
+  --color-danger-text-alt: #ff8787;
+  --color-info-subtle: #1a3a4a;
   --color-highlight-blue: #1a2240;
   --color-highlight-yellow: #2d2a1a;
   --color-highlight-pink: #2d1a2a;
@@ -76,10 +83,22 @@
   .text-dark { color: #f0f0f0 !important; }
   .text-secondary { color: #8e99a4 !important; }
 
+  // Global Dropdown Override
+  .dropdown-menu {
+    background-color: #16213e !important;
+    border-color: #2d2d44 !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+    .dropdown-item {
+      color: #e0e0e0 !important;
+      &:hover, &:focus { background-color: #1f2b47 !important; color: #ffffff !important; }
+      &.active { background-color: #4a9eff !important; color: #ffffff !important; }
+    }
+    .dropdown-divider { border-color: #2d2d44 !important; }
+  }
+
   .navbar {
     background-color: #0f3460 !important;
     .navbar-brand, .nav-link, .mi { color: #fff !important; }
-    .dropdown-menu { background-color: #16213e; border-color: #2d2d44; .dropdown-item { color: #e0e0e0; &:hover { background-color: #1f2b47; color: #fff; } } }
   }
 
   // Headings
@@ -150,20 +169,6 @@
   // Progress
   .progress { background-color: #2d2d44 !important; .progress-bar { color: #fff !important; } }
   .bg-secondary-subtle { background-color: #2d2d44 !important; }
-
-  // Code
-  code { background-color: #2d2d44 !important; color: #e5c07b !important; }
-  pre code { background-color: #1a2240 !important; border-color: #2d2d44 !important; color: #abb2bf !important; }
-
-  // DataTables
-  .dataTables_wrapper {
-    .dataTables_info, .dataTables_length, .dataTables_filter { color: #8e99a4 !important; }
-    .dataTables_paginate .paginate_button {
-      color: #8e99a4 !important;
-      &.current { background: #4a9eff !important; border-color: #4a9eff !important; color: #fff !important; }
-      &:hover { background: #1f2b47 !important; border-color: #2d2d44 !important; color: #fff !important; }
-    }
-  }
 
   // Select2 Fixes
   .select2-container--bootstrap-5 {
