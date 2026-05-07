@@ -4,94 +4,117 @@
 // ============================================
 
 [data-theme="solarized"] {
+  // Bootstrap & Core Overrides
   --bs-body-bg: #fdf6e3;
   --bs-body-color: #586e75;
+  --bs-border-color: #eee8d5;
+  --bs-card-bg: #fdf6e3;
+  --bs-card-border-color: #eee8d5;
+  --bs-secondary-bg: #eee8d5;
+  --bs-tertiary-bg: #f5efd7;
+  --bs-emphasis-color: #073642;
+  --bs-link-color: #268bd2;
+  --bs-link-hover-color: #2aa198;
 
+  // Redefine Bootstrap colors
+  --bs-primary: #268bd2;
+  --bs-primary-rgb: 38, 139, 210;
+  --bs-success: #859900;
+  --bs-success-rgb: 133, 153, 0;
+  --bs-danger: #dc322f;
+  --bs-danger-rgb: 220, 50, 47;
+  --bs-warning: #b58900;
+  --bs-warning-rgb: 181, 137, 0;
+  --bs-info: #2aa198;
+  --bs-info-rgb: 42, 161, 152;
+
+  // Custom property overrides from globals.scss
+  --color-primary: #268bd2;
+  --color-primary-dark: #073642;
+  --color-primary-light: #657b83;
+  --color-primary-lightest: #eee8d5;
+  --color-secondary: #2aa198;
+  --color-secondary-dark: #002b36;
+  --color-text-main: #586e75;
+  --color-text-muted: #839496;
+  --color-text-dark: #073642;
+  --color-text-light: #93a1a1;
+  --color-bg-main: #fdf6e3;
+  --color-surface: #fdf6e3;
+  --color-surface-hover: #eee8d5;
+  --color-surface-alt: #f5efd7;
+  --color-surface-gray: #eee8d5;
+  --color-border-light: #eee8d5;
+  --color-border-main: #ddd6c1;
+  --color-border-dark: #93a1a1;
+  --color-border-muted: #eee8d5;
+  --color-border-gray: #ddd6c1;
+  --color-border-lightest: #eee8d5;
+  --color-success-bg: #e2eebc;
+  --color-danger-bg: #f8d7da;
+  --color-limit-info-bg: #2aa198;
+  --color-limit-danger-bg: #dc322f;
+  --color-limit-text: #fff;
+
+  // Body & General
   background-color: #fdf6e3 !important;
   color: #586e75;
 
-  // Navbar
-  .navbar { background-color: #073642 !important; }
+  .navbar {
+    background-color: #073642 !important;
+    .navbar-brand, .nav-link, .mi { color: #93a1a1 !important; }
+    .nav-link:hover { color: #fdf6e3 !important; }
+  }
+
+  // Headings
+  h1 { color: #b58900 !important; }
+  h2 { color: #cb4b16 !important; }
+  h3, h4, h5, h6 { color: #657b83 !important; }
+  .text-dark { color: #073642 !important; }
+
+  // Buttons
+  .btn-primary { background-color: #268bd2 !important; border-color: #268bd2 !important; color: #fff !important; }
+  .btn-success { background-color: #859900 !important; border-color: #859900 !important; color: #fff !important; }
+  .btn-danger { background-color: #dc322f !important; border-color: #dc322f !important; color: #fff !important; }
+  .btn-light { background-color: #eee8d5; border-color: #ddd6c1; color: #586e75; }
 
   // Cards
   .card {
     background-color: #fdf6e3;
     border-color: #eee8d5;
-    box-shadow: 0 2px 8px rgba(101, 84, 47, 0.08);
+    .card-header { background-color: #eee8d5 !important; border-bottom: 1px solid #ddd6c1; color: #657b83; font-weight: 600; }
   }
-  .card-header { background-color: #eee8d5; border-color: #ddd6c1; color: #657b83; }
-
-  // Text
-  h1 { color: #b58900 !important; }
-  h2 { color: #cb4b16 !important; }
-  h3, h4, h5, h6 { color: #657b83 !important; }
-  .text-dark { color: #002b36 !important; }
-  .text-secondary { color: #839496 !important; }
-  .text-muted { color: #93a1a1 !important; }
-
-  // Links
-  a { color: #268bd2; &:hover { color: #2aa198; } }
-  .link-danger { color: #dc322f !important; }
 
   // Forms
   .form-control, .form-select {
     background-color: #fdf6e3;
     border-color: #ddd6c1;
     color: #586e75;
-    &:focus {
-      background-color: #ffffff;
-      border-color: #b58900;
-      box-shadow: 0 0 0 0.25rem rgba(181, 137, 0, 0.15);
-    }
+    &:focus { background-color: #fff; border-color: #b58900; box-shadow: 0 0 0 0.25rem rgba(181, 137, 0, 0.1); }
   }
-  .input-group-text { background-color: #eee8d5; border-color: #ddd6c1; color: #657b83; }
 
   // Tables
-  .table { --bs-table-bg: #fdf6e3; --bs-table-color: #586e75; --bs-table-border-color: #eee8d5; }
-  .table-hover > tbody > tr:hover { --bs-table-hover-bg: #eee8d5; }
-  .table-striped > tbody > tr:nth-of-type(odd) { --bs-table-striped-bg: #f5efd7; }
-
-  // Buttons
-  .btn-primary { background-color: #268bd2 !important; border-color: #268bd2 !important; }
-  .btn-primary:hover { background-color: #1a6ca8 !important; border-color: #1a6ca8 !important; }
-
-  // Nav tabs
-  .nav-tabs {
-    border-color: #ddd6c1;
-    .nav-link {
-      color: #839496;
-      &.active { background-color: #fdf6e3; border-color: #ddd6c1 #ddd6c1 #fdf6e3; color: #586e75; }
-    }
+  .table {
+    --bs-table-bg: #fdf6e3;
+    --bs-table-striped-bg: #f5efd7;
+    --bs-table-hover-bg: #eee8d5;
+    --bs-table-border-color: #eee8d5;
+    thead th { background-color: #eee8d5; color: #657b83; border-bottom: 2px solid #ddd6c1; }
   }
 
   // Alerts
-  .alert-secondary { background-color: #eee8d5; border-color: #ddd6c1; color: #657b83; }
-  .alert-warning { background-color: #fef3c7; border-color: #f0d888; color: #92400e; }
-
-  // Progress bar
-  .progress { background-color: #eee8d5; }
+  .alert-primary { background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+  .alert-success { background-color: #e2eebc; border-color: #d1e0a3; color: #3d4900; }
+  .alert-danger { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+  .alert-secondary { background-color: #eee8d5; border-color: #ddd6c1; color: #586e75; }
 
   // Badges
-  .badge.bg-primary { background-color: #268bd2 !important; }
+  .badge {
+    &.bg-primary { background-color: #268bd2 !important; color: #fff !important; }
+    &.bg-success { background-color: #859900 !important; color: #fff !important; }
+    &.bg-light { background-color: #eee8d5 !important; color: #586e75 !important; }
+  }
 
   // Footer
-  .footer { background-color: #eee8d5 !important; border-color: #ddd6c1 !important; }
-
-  // Code
-  code { background-color: #eee8d5; color: #cb4b16; }
-  pre code { background-color: #fdf6e3; border-color: #eee8d5; color: #586e75; }
-
-  // Dropdowns
-  .dropdown-menu { background-color: #fdf6e3; border-color: #ddd6c1; }
-  .dropdown-item { color: #586e75; &:hover { background-color: #eee8d5; } }
-
-  // Modals
-  .modal-content { background-color: #fdf6e3; border-color: #ddd6c1; }
-  .modal-header { border-color: #eee8d5; }
-
-  // Config page
-  .config-item { border-color: #eee8d5 !important; }
-
-  // Scrollbar
-  .bg-light { background-color: #fdf6e3 !important; }
+  .footer { background-color: #eee8d5 !important; border-top: 1px solid #ddd6c1 !important; }
 }
