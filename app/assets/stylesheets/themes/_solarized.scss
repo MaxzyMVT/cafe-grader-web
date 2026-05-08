@@ -175,6 +175,10 @@
     border-color: #ddd6c1 !important;
     color: #586e75 !important;
     &:focus { background-color: #fff !important; border-color: #b58900 !important; box-shadow: 0 0 0 0.25rem rgba(181, 137, 0, 0.1) !important; }
+    option {
+      background-color: #fdf6e3 !important;
+      color: #586e75 !important;
+    }
   }
 
   // Tables
