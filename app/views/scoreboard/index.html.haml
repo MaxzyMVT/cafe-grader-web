@@ -38,7 +38,7 @@
                     %td.text-center.fw-bold= entry[:total_score].to_i
                     - @problems.each do |p|
                       - score = @scores[entry[:user].id][p.id] || 0
-                      - pct = (p.full_score > 0) ? (score / p.full_score.to_f).clamp(0, 1) : 0
+                      - pct = (p.full_score && p.full_score > 0) ? (score / p.full_score.to_f).clamp(0, 1) : 0
                       %td.text-center.score-cell{style: "background-color: color-mix(in srgb, var(--color-success-bg) #{pct * 100}%, transparent);"}
                         - if score > 0
                           = score.to_i
@@ -58,7 +58,7 @@
                       %td.text-center= m[:total_score].to_i
                       - @problems.each do |p|
                         - score = @scores[m[:user].id][p.id] || 0
-                        - pct = (p.full_score > 0) ? (score / p.full_score.to_f).clamp(0, 1) : 0
+                        - pct = (p.full_score && p.full_score > 0) ? (score / p.full_score.to_f).clamp(0, 1) : 0
                         %td.text-center.score-cell{style: "background-color: color-mix(in srgb, var(--color-success-bg) #{pct * 100}%, transparent);"}
                           - if score > 0
                             = score.to_i
