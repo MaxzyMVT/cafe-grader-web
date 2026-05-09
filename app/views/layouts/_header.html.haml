@@ -43,7 +43,7 @@
           - if GraderConfiguration['right.user_hall_of_fame']
             %li= link_to "#{I18n.t 'menu.hall_of_fame'}", problem_hof_report_path, class: 'nav-link mx-2'+active_class_when(controller: :report, action: :problem_hof)
           / scoreboard
-          - if GraderConfiguration['system.scoreboard_public_accessible'] || @current_user
+          - if GraderConfiguration['system.scoreboard_enabled'] && (GraderConfiguration['system.scoreboard_public_accessible'] || @current_user)
             %li= link_to "Scoreboard", scoreboard_path, class: 'nav-link mx-2'+active_class_when(controller: :scoreboard)
           / admin section
           - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:edit).any?)

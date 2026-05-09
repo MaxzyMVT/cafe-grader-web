@@ -105,6 +105,11 @@ class ScoreboardController < ApplicationController
   private
 
   def check_public_scoreboard_access
+    unless GraderConfiguration['system.scoreboard_enabled']
+      redirect_to root_path, alert: 'Scoreboard is currently disabled.'
+      return
+    end
+
     unless GraderConfiguration['system.scoreboard_public_accessible']
       check_valid_login
     end

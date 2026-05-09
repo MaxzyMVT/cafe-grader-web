@@ -8,6 +8,13 @@ CONFIGURATIONS =
    },
 
    {
+     key: 'system.scoreboard_enabled',
+     value_type: 'boolean',
+     default_value: 'true',
+     description: 'Enable the Real-time Score Board feature'
+   },
+
+   {
      key: 'system.scoreboard_public_accessible',
      value_type: 'boolean',
      default_value: 'false',
