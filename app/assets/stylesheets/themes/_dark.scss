@@ -223,8 +223,33 @@
   .bg-secondary-subtle { background-color: #2d2d44 !important; }
 
   // Select2 Fixes
+  .select2-container {
+    width: 100% !important;
+  }
   .select2-container--bootstrap-5 {
-    .select2-selection { background-color: #1f2b47 !important; border-color: #3d3d5c !important; color: #e0e0e0 !important; }
+    .select2-selection { 
+      background-color: #1f2b47 !important; 
+      border-color: #3d3d5c !important;
+      min-height: 38px !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+    .select2-selection--multiple {
+      padding: 2px 5px !important;
+      .select2-selection__choice {
+        background-color: #2d2d44 !important;
+        border: 1px solid #3d3d5c !important;
+        color: #e0e0e0 !important;
+        border-radius: 4px !important;
+        padding: 0 8px !important;
+        margin: 2px !important;
+        .select2-selection__choice__remove {
+          color: #ff4d4d !important;
+          margin-right: 5px !important;
+          &:hover { color: #ff9999 !important; }
+        }
+      }
+    }
     .select2-selection__rendered { color: #e0e0e0 !important; }
     .select2-dropdown { background-color: #16213e !important; border-color: #2d2d44 !important; }
     .select2-results__option { color: #e0e0e0 !important; }

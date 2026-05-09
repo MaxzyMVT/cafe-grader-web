@@ -213,7 +213,33 @@
   .footer { background-color: #eee8d5 !important; border-top: 1px solid #ddd6c1 !important; }
 
   // Select2 Fixes
+  .select2-container {
+    width: 100% !important;
+  }
   .select2-container--bootstrap-5 {
+    .select2-selection { 
+      background-color: #fdf6e3 !important; 
+      border-color: #ddd6c1 !important;
+      min-height: 38px !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+    .select2-selection--multiple {
+      padding: 2px 5px !important;
+      .select2-selection__choice {
+        background-color: #eee8d5 !important;
+        border: 1px solid #ddd6c1 !important;
+        color: #586e75 !important;
+        border-radius: 4px !important;
+        padding: 0 8px !important;
+        margin: 2px !important;
+        .select2-selection__choice__remove {
+          color: #cb4b16 !important;
+          margin-right: 5px !important;
+          &:hover { color: #dc322f !important; }
+        }
+      }
+    }
     .select2-selection__rendered { color: #586e75 !important; }
     .select2-results__option--highlighted { background-color: #268bd2 !important; color: #ffffff !important; }
     .select2-results__option--selected { background-color: #eee8d5 !important; color: #268bd2 !important; }

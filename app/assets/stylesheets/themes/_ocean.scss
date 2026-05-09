@@ -211,7 +211,33 @@
   .footer { background-color: #ecfeff !important; border-top: 1px solid #bae6fd !important; }
 
   // Select2 Fixes
+  .select2-container {
+    width: 100% !important;
+  }
   .select2-container--bootstrap-5 {
+    .select2-selection { 
+      background-color: #ffffff !important; 
+      border-color: #bae6fd !important;
+      min-height: 38px !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+    .select2-selection--multiple {
+      padding: 2px 5px !important;
+      .select2-selection__choice {
+        background-color: #0891b2 !important;
+        border: 1px solid #0e7490 !important;
+        color: #ffffff !important;
+        border-radius: 4px !important;
+        padding: 0 8px !important;
+        margin: 2px !important;
+        .select2-selection__choice__remove {
+          color: #ffffff !important;
+          margin-right: 5px !important;
+          &:hover { color: #fecaca !important; }
+        }
+      }
+    }
     .select2-selection__rendered { color: #1a3a4a !important; }
     .select2-results__option--highlighted { background-color: #0891b2 !important; color: #ffffff !important; }
     .select2-results__option--selected { background-color: #ecfeff !important; color: #0891b2 !important; }
