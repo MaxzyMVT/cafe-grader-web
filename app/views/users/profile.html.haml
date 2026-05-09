@@ -3,9 +3,50 @@
   .col-md-6
     = simple_form_for @current_user, url: update_self_users_path do |f|
       = f.association :default_language, collection: Language.all, include_blank: '-- No default language --'.html_safe
+      - if GraderConfiguration['system.theme_selector_enabled']
+        = f.input :theme, collection: User::THEMES.map { |t| [t.capitalize, t] }, include_blank: false, label: 'UI Theme', hint: 'Choose your preferred visual theme for the grader interface.'
       = f.input :password
       = f.input :password_confirmation
       = f.button :submit, class: 'btn btn-primary'
 
-
-
+- if GraderConfiguration['system.theme_selector_enabled']
+  .row.mt-4
+    .col-md-12
+      %h4.fw-bold.text-secondary.mb-3 Theme Preview
+      .d-flex.flex-wrap.gap-3
+        - User::THEMES.each do |theme_name|
+          - is_active = (@current_user.theme || 'default') == theme_name
+          .card.theme-preview-card.shadow-sm{style: 'width: 180px; cursor: pointer; transition: all 0.2s ease-in-out; border-radius: 12px; overflow: hidden;', class: (is_active ? 'border-primary border-2 shadow' : ''), onclick: "document.getElementById('user_theme').value = '#{theme_name}'; document.querySelector('form').requestSubmit();"}
+            .card-body.text-center.py-3
+              - case theme_name
+              - when 'default'
+                %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #0074d9, #5566bb);'}
+                %small.fw-bold Default
+                %br
+                %small.text-muted Classic Blue
+              - when 'dark'
+                %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid #2d2d44;'}
+                %small.fw-bold Dark
+                %br
+                %small.text-muted Deep Midnight
+              - when 'premium'
+                %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #8b5cf6, #7c3aed, #0c0c1d);'}
+                %small.fw-bold Premium
+                %br
+                %small.text-muted Luxury Glass
+              - when 'ocean'
+                %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #f0f9ff, #0891b2); border: 1px solid #bae6fd;'}
+                %small.fw-bold Ocean
+                %br
+                %small.text-muted Calm Waters
+              - when 'solarized'
+                %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #fdf6e3, #b58900); border: 1px solid #eee8d5;'}
+                %small.fw-bold Solarized
+                %br
+                %small.text-muted Warm Paper
+            - if is_active
+              .card-footer.bg-primary.text-white.text-center.py-1.border-0
+                %small.fw-bold Active
+            - else
+              .card-footer.bg-transparent.text-center.py-1.border-0
+                %small.text-muted Select

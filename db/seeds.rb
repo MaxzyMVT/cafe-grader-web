@@ -218,6 +218,14 @@ CONFIGURATIONS =
      description: 'If true, shows the total user points on the top menu bar.'
    },
 
+   #---------------------------- system (theme) --------------------------------
+   {
+     key: 'system.theme_selector_enabled',
+     value_type: 'boolean',
+     default_value: 'true',
+     description: 'If true, contestants can change their UI theme from the settings page. If false, all users see the default theme.'
+   },
+
   ]
 
 

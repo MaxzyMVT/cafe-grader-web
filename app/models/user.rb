@@ -5,6 +5,8 @@ require 'net/http'
 require 'json'
 
 class User < ApplicationRecord
+  THEMES = %w[default dark premium ocean solarized].freeze
+
   has_and_belongs_to_many :roles
 
   # has_and_belongs_to_many :groups
@@ -53,6 +55,8 @@ class User < ApplicationRecord
   validates_presence_of :password, if: :password_required?
   validates_length_of :password, within: 4..50, if: :password_required?
   validates_confirmation_of :password, if: :password_required?
+
+  validates_inclusion_of :theme, in: THEMES, allow_nil: true
 
   validates_format_of :email,
                       with: /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\Z/i,

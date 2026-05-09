@@ -21,7 +21,10 @@
     = render partial: 'layouts/js_route'
     = render partial: 'layouts/js_ui'
 
-  %body.bg-light{ 'data-controller': "initialize #{@stimulus_controller}" }
+  - user_theme = (@current_user&.theme.presence || 'default')
+  - user_theme = 'default' unless GraderConfiguration['system.theme_selector_enabled']
+  - user_theme = nil if user_theme == 'default'
+  %body.bg-light{ 'data-controller': "initialize #{@stimulus_controller}", 'data-theme': user_theme }
     - unless local_assigns[:skip_header]
       = render 'layouts/header'
 

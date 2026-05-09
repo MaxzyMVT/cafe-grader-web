@@ -103,10 +103,9 @@
             %li.nav-item.d-flex.align-items-center
               %a.nav-link.link-flex{href: profile_users_path, 'data-user-id': @current_user.id}
                 %span.mi.md-18 settings
-          - if GraderConfiguration['point_hint.show_user_points']
             %li.nav-item.d-flex.align-items-center.mx-2
               %span.badge.bg-success.rounded-pill.d-inline-flex.align-items-center.gap-2.px-3{style: 'height: 32px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);'}
-                %span.mi.md-18{style: 'line-height: 1; margin-top: -1px;'} stars
+                %span.mi.md-18{style: 'line-height: 1; margin-top: -1px; color: inherit !important;'} stars
                 %span.fw-bold{style: 'line-height: 1;'}
                   = "Points: #{number_with_precision(@current_user.current_score, precision: 2, strip_insignificant_zeros: true)}"
           %li.nav-item.d-flex.align-items-center
