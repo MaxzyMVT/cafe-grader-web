@@ -6,10 +6,12 @@
     - if @current_user&.admin?
       = link_to problem_hof_recompute_report_path, class: 'btn btn-sm bg-white shadow-sm border-0 text-secondary d-inline-flex align-items-center justify-content-center', data: { turbo: true, 'turbo-method': 'post', 'bs-toggle': 'tooltip' }, title: 'Recompute statistics' do
         %span.mi sync
-    - if GraderConfiguration['system.scoreboard_enabled'] && (GraderConfiguration['system.scoreboard_public_accessible'] || @current_user)
-      = link_to scoreboard_path, class: 'btn btn-sm btn-outline-primary shadow-sm d-inline-flex align-items-center justify-content-center gap-2' do
-        %span.mi leaderboard
-        Score Board
+    - if GraderConfiguration['system.scoreboard_enabled']
+      - level = GraderConfiguration['system.scoreboard_view_level'] || 'user'
+      - if level == 'all' || (level == 'user' && @current_user) || (level == 'admin' && @current_user&.admin?)
+        = link_to scoreboard_path, class: 'btn btn-sm btn-outline-primary shadow-sm d-inline-flex align-items-center justify-content-center gap-2' do
+          %span.mi leaderboard
+          Score Board
 
 .card.card-shadow
   .card-body

@@ -110,8 +110,17 @@ class ScoreboardController < ApplicationController
       return
     end
 
-    unless GraderConfiguration['system.scoreboard_public_accessible']
+    level = GraderConfiguration['system.scoreboard_view_level'] || 'user'
+    case level
+    when 'all'
+      # anyone can see
+    when 'user'
       check_valid_login
+    when 'admin'
+      check_valid_login
+      unless @current_user.admin?
+        redirect_to root_path, alert: 'Only admins can access the scoreboard.'
+      end
     end
   end
 end
