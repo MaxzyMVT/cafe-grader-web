@@ -15,6 +15,13 @@ CONFIGURATIONS =
    },
 
    {
+     key: 'system.scoreboard_include_admins',
+     value_type: 'boolean',
+     default_value: 'false',
+     description: 'Include admins in the public scoreboard'
+   },
+
+   {
      key: 'ui.front.title',
      value_type: 'string',
      default_value: 'Grader'

@@ -5,63 +5,64 @@
       Real-time Score Board
     
     .d-flex.align-items-center.gap-3
-      = form_with url: scoreboard_path, method: :get, data: { turbo_frame: "scoreboard", turbo_action: "replace" }, class: "d-flex gap-2 align-items-center" do |f|
-        .form-check.form-switch
-          = f.check_box :mode, { class: 'form-check-input', id: 'modeToggle', onchange: 'this.form.requestSubmit()', checked: @mode == 'group' }, 'group', 'individual'
-          %label.form-check-label{for: 'modeToggle'} Group Mode
+      = form_with url: scoreboard_path, method: :get, data: { turbo_frame: "scoreboard", turbo_action: "replace" }, class: "d-flex gap-3 align-items-center mb-0" do |f|
+        .form-check.form-switch.d-flex.align-items-center.gap-2.mb-0.ps-0
+          = f.check_box :mode, { class: 'form-check-input m-0', style: 'margin-left: 0;', id: 'modeToggle', onchange: 'this.form.requestSubmit()', checked: @mode == 'group' }, 'group', 'individual'
+          %label.form-check-label.text-nowrap.mb-0{for: 'modeToggle'} Group Mode
         
-        %select.form-select.form-select-sm{name: "sort", onchange: "this.form.requestSubmit()"}
+        %select.form-select.form-select-sm{name: "sort", onchange: "this.form.requestSubmit()", style: "width: auto;"}
           %option{value: "rank", selected: params[:sort] != 'name'} Sort by Rank
           %option{value: "name", selected: params[:sort] == 'name'} Sort by Name
 
   = turbo_frame_tag "scoreboard" do
-    .card.shadow-sm
-      .card-body.p-0
-        .table-responsive{style: "max-height: 80vh; overflow-y: auto;"}
-          %table.table.table-hover.table-bordered.m-0.scoreboard-table
-            %thead.table-light{style: "position: sticky; top: 0; z-index: 1;"}
-              %tr
-                %th.text-center{style: "min-width: 60px;"} Rank
-                %th{style: "min-width: 200px;"} Name
-                %th.text-center{style: "min-width: 100px;"} Total
-                - @problems.each do |p|
-                  %th.text-center.problem-header{title: p.full_name}
-                    .vertical-text= p.name
-                    .small.text-muted= p.full_score
-            
-            %tbody
-              - if @mode == 'individual'
-                - @leaderboard.each do |entry|
-                  %tr
-                    %td.text-center.fw-bold= entry[:rank]
-                    %td= entry[:user].full_name
-                    %td.text-center.fw-bold= entry[:total_score].to_i
-                    - @problems.each do |p|
-                      - score = @scores[entry[:user].id][p.id] || 0
-                      - pct = (p.full_score && p.full_score > 0) ? (score / p.full_score.to_f).clamp(0, 1) : 0
-                      %td.text-center.score-cell{style: "background-color: color-mix(in srgb, var(--color-success-bg) #{pct * 100}%, transparent);"}
-                        - if score > 0
-                          = score.to_i
-              - else
-                - @leaderboard.each do |entry|
-                  %tr.table-secondary
-                    %td.text-center.fw-bold= entry[:rank]
-                    %td.fw-bold= entry[:group].name
-                    %td.text-center.fw-bold= entry[:total_score].to_i
-                    %td{colspan: @problems.size}
-                  - entry[:members].each do |m|
+    .d-flex.justify-content-center
+      .card.shadow-sm{style: "min-width: 75%; max-width: 100%;"}
+        .card-body.p-0
+          .table-responsive{style: "max-height: 80vh; overflow-y: auto;"}
+            %table.table.table-hover.table-bordered.m-0.scoreboard-table.w-100
+              %thead.table-light{style: "position: sticky; top: 0; z-index: 1;"}
+                %tr
+                  %th.text-center{style: "min-width: 60px;"} Rank
+                  %th{style: "min-width: 200px;"} Name
+                  %th.text-center{style: "min-width: 100px;"} Total
+                  - @problems.each do |p|
+                    %th.text-center.problem-header{title: p.full_name}
+                      .vertical-text.mx-auto= p.name
+                      .small.text-muted= p.full_score
+              
+              %tbody
+                - if @mode == 'individual'
+                  - @leaderboard.each do |entry|
                     %tr
-                      %td.text-center.text-muted.small= m[:rank]
-                      %td.ps-4
-                        %i.mi.mi-subdirectory-arrow-right.text-muted.me-2
-                        = m[:user].full_name
-                      %td.text-center= m[:total_score].to_i
+                      %td.text-center.fw-bold= entry[:rank]
+                      %td= entry[:user].full_name
+                      %td.text-center.fw-bold= entry[:total_score].to_i
                       - @problems.each do |p|
-                        - score = @scores[m[:user].id][p.id] || 0
+                        - score = @scores[entry[:user].id][p.id] || 0
                         - pct = (p.full_score && p.full_score > 0) ? (score / p.full_score.to_f).clamp(0, 1) : 0
                         %td.text-center.score-cell{style: "background-color: color-mix(in srgb, var(--color-success-bg) #{pct * 100}%, transparent);"}
                           - if score > 0
                             = score.to_i
+                - else
+                  - @leaderboard.each do |entry|
+                    %tr.table-secondary
+                      %td.text-center.fw-bold= entry[:rank]
+                      %td.fw-bold= entry[:group].name
+                      %td.text-center.fw-bold= entry[:total_score].to_i
+                      %td{colspan: @problems.size}
+                    - entry[:members].each do |m|
+                      %tr
+                        %td.text-center.text-muted.small= m[:rank]
+                        %td.ps-4
+                          %i.mi.mi-subdirectory-arrow-right.text-muted.me-2
+                          = m[:user].full_name
+                        %td.text-center= m[:total_score].to_i
+                        - @problems.each do |p|
+                          - score = @scores[m[:user].id][p.id] || 0
+                          - pct = (p.full_score && p.full_score > 0) ? (score / p.full_score.to_f).clamp(0, 1) : 0
+                          %td.text-center.score-cell{style: "background-color: color-mix(in srgb, var(--color-success-bg) #{pct * 100}%, transparent);"}
+                            - if score > 0
+                              = score.to_i
 
 :css
   .scoreboard-table .vertical-text {
@@ -70,6 +71,8 @@
     white-space: nowrap;
     padding: 10px 0;
     max-height: 150px;
+    margin: 0 auto;
+    text-align: center;
   }
   .scoreboard-table .problem-header {
     vertical-align: bottom;

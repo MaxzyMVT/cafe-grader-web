@@ -9,6 +9,11 @@ class ScoreboardController < ApplicationController
     # Fetch users, but depending on group toggle, we might need groups
     @users = User.where(enabled: true)
     
+    unless GraderConfiguration['system.scoreboard_include_admins']
+      admin_ids = User.joins(:roles).where(roles: { name: 'admin' }).pluck(:id)
+      @users = @users.where.not(id: admin_ids)
+    end
+    
     # Mode toggle: individual vs groups
     @mode = params[:mode] == 'group' ? 'group' : 'individual'
     
