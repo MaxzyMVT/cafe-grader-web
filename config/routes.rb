@@ -303,6 +303,10 @@ Rails.application.routes.draw do
     get 'ai'
     post 'ai_query'
 
+    # extended statistics report
+    get 'extended_stat'
+    post 'extended_stat'
+
     # hall of fame
     get 'problem_hof'
     post 'problem_hof_query'

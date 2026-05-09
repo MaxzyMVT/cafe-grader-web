@@ -1,0 +1,160 @@
+= turbo_frame_tag "statistics_content" do
+  .container-fluid.mt-4{data: {controller: 'init-ui-component'}}
+    .d-flex.justify-content-between.align-items-end.mb-3
+      .d-flex.flex-column.gap-1
+        %small.text-secondary.text-uppercase.fw-bold.ls-1 Report
+        %h2.fw-bold.text-dark.mb-0 Statistics
+    
+    .card.card-shadow.mb-4
+      .card-body
+        = form_with url: extended_stat_report_path, method: :get, data: { turbo_frame: "statistics_content" }, class: "row g-3 align-items-end" do |f|
+          .col-md-3
+            = f.label :since_datetime, "Since", class: "form-label"
+            = f.text_field :since_datetime, value: @since_time&.strftime('%d/%b/%Y %H:%M'), class: "form-control tempus-dominus", placeholder: "DD/MMM/YYYY HH:MM", data: { 'td-template': 'datetime' }
+          .col-md-3
+            = f.label :until_datetime, "Until", class: "form-label"
+            = f.text_field :until_datetime, value: @until_time&.strftime('%d/%b/%Y %H:%M'), class: "form-control tempus-dominus", placeholder: "DD/MMM/YYYY HH:MM", data: { 'td-template': 'datetime' }
+          .col-md-3
+            = f.label :language_id, "Language", class: "form-label"
+            = f.collection_select :language_id, @languages, :id, :pretty_name, { include_blank: "All Languages", selected: params[:language_id] }, class: "form-select"
+          .col-md-3
+            = f.submit "Filter", class: "btn btn-primary w-100"
+
+    .row.g-4
+      .col-md-6.col-lg-4
+        .card.card-shadow.h-100
+          .card-header.bg-primary.text-white.fw-bold 
+            %i.mi.mi-whatshot.me-2
+            Most Effort (Submissions)
+          .card-body.p-0
+            %ul.list-group.list-group-flush
+              - @most_effort.each_with_index do |(user_id, count), i|
+                %li.list-group-item.d-flex.justify-content-between.align-items-center
+                  %span
+                    %span.badge.bg-light.text-dark.me-2= i + 1
+                    = @most_effort_users[user_id]&.full_name || "User ##{user_id}"
+                  %span.badge.bg-primary.rounded-pill= count
+
+      .col-md-6.col-lg-4
+        .card.card-shadow.h-100
+          .card-header.bg-success.text-white.fw-bold 
+            %i.mi.mi-emoji-events.me-2
+            First Bloods (Fastest to pass)
+          .card-body.p-0
+            %ul.list-group.list-group-flush
+              - @first_bloods.each_with_index do |(user_id, count), i|
+                %li.list-group-item.d-flex.justify-content-between.align-items-center
+                  %span
+                    %span.badge.bg-light.text-dark.me-2= i + 1
+                    = @first_bloods_users[user_id]&.full_name || "User ##{user_id}"
+                %span.badge.bg-success.rounded-pill= count
+
+      .col-md-6.col-lg-4
+        .card.card-shadow.h-100
+          .card-header.bg-info.text-white.fw-bold 
+            %i.mi.mi-trending-up.me-2
+            Score Growth
+          .card-body.p-0
+            - if @since_time && @until_time
+              %ul.list-group.list-group-flush
+                - @score_growth.each_with_index do |(user_id, growth), i|
+                  %li.list-group-item.d-flex.justify-content-between.align-items-center
+                    %span
+                      %span.badge.bg-light.text-dark.me-2= i + 1
+                      = @score_growth_users[user_id]&.full_name || "User ##{user_id}"
+                    %span.badge.bg-info.rounded-pill= "+#{growth.to_i}"
+            - else
+              .p-4.text-center.text-muted Please select 'Since' and 'Until' dates to view score growth.
+
+      .col-md-6.col-lg-4
+        .card.card-shadow.h-100
+          .card-header.bg-warning.text-dark.fw-bold 
+            %i.mi.mi-compress.me-2
+            Most Efficient Coder (Least Code)
+          .card-body.p-0
+            %ul.list-group.list-group-flush
+              - @least_chars.each_with_index do |(user_id, chars), i|
+                %li.list-group-item.d-flex.justify-content-between.align-items-center
+                  %span
+                    %span.badge.bg-light.text-dark.me-2= i + 1
+                    = User.find_by(id: user_id)&.full_name || "User ##{user_id}"
+                  %span.text-muted.small= "#{chars} chars"
+
+      .col-md-6.col-lg-4
+        .card.card-shadow.h-100
+          .card-header.bg-danger.text-white.fw-bold 
+            %i.mi.mi-speed.me-2
+            Fastest Code (Least Runtime)
+          .card-body.p-0
+            %ul.list-group.list-group-flush
+              - @fastest_runtime.each_with_index do |(user_id, time), i|
+                %li.list-group-item.d-flex.justify-content-between.align-items-center
+                  %span
+                    %span.badge.bg-light.text-dark.me-2= i + 1
+                    = User.find_by(id: user_id)&.full_name || "User ##{user_id}"
+                  %span.text-muted.small= "#{time.round(3)}s"
+
+      .col-md-6.col-lg-4
+        .card.card-shadow.h-100
+          .card-header.bg-secondary.text-white.fw-bold 
+            %i.mi.mi-memory.me-2
+            Least Memory Used
+          .card-body.p-0
+            %ul.list-group.list-group-flush
+              - @least_memory.each_with_index do |(user_id, mem), i|
+                %li.list-group-item.d-flex.justify-content-between.align-items-center
+                  %span
+                    %span.badge.bg-light.text-dark.me-2= i + 1
+                    = User.find_by(id: user_id)&.full_name || "User ##{user_id}"
+                  %span.text-muted.small= "#{mem} KB"
+
+    .row.mt-4
+      .col-md-6
+        .card.card-shadow.h-100
+          .card-header.bg-dark.text-white.fw-bold 
+            %i.mi.mi-check-circle.me-2
+            Latest Passed Submissions
+          .card-body.p-0
+            .table-responsive
+              %table.table.table-hover.m-0
+                %thead.table-light
+                  %tr
+                    %th User
+                    %th Problem
+                    %th Language
+                    %th Time
+                %tbody
+                  - @latest_passed.each do |sub|
+                    %tr
+                      %td= sub.user&.full_name
+                      %td= sub.problem&.name
+                      %td= sub.language&.pretty_name
+                      %td= time_ago_in_words(sub.submitted_at) + " ago"
+                      
+      .col-md-6
+        .card.card-shadow.h-100
+          .card-header.bg-dark.text-white.fw-bold 
+            %i.mi.mi-update.me-2
+            Latest Submissions
+          .card-body.p-0
+            .table-responsive
+              %table.table.table-hover.m-0
+                %thead.table-light
+                  %tr
+                    %th User
+                    %th Problem
+                    %th Score
+                    %th Time
+                %tbody
+                  - @latest_sub.each do |sub|
+                    %tr
+                      %td= sub.user&.full_name
+                      %td= sub.problem&.name
+                      %td
+                        - if sub.points.nil?
+                          %span.badge.bg-secondary Processing
+                        - elsif sub.points >= 100
+                          %span.badge.bg-success= sub.points.to_i
+                        - else
+                          %span.badge.bg-warning.text-dark= sub.points.to_i
+                      %td= time_ago_in_words(sub.submitted_at) + " ago"

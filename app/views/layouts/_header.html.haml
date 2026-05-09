@@ -83,6 +83,7 @@
                 %li= link_to 'Submission Report', submission_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :submission)
                 %li= link_to 'Login Report', login_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :login)
                 %li= link_to 'AI Report', ai_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :ai)
+                %li= link_to 'Statistics Report', extended_stat_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :extended_stat)
             .d-flex
               =link_to "#{@backlog} backlogs!",
                 grader_processes_path,

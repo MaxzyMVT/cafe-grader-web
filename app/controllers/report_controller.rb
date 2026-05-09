@@ -233,6 +233,93 @@ class ReportController < ApplicationController
   # def progress_query
   # end
 
+  def extended_stat
+    # Allow admins and users with report access
+    # Parameters for filtering
+    @languages = Language.all
+
+    begin
+      @since_time = Time.zone.parse(params[:since_datetime]) if params[:since_datetime].present?
+    rescue
+      @since_time = nil
+    end
+    begin
+      @until_time = Time.zone.parse(params[:until_datetime]) if params[:until_datetime].present?
+    rescue
+      @until_time = nil
+    end
+
+    # Base submissions scope based on time
+    subs_scope = Submission.all
+    subs_scope = subs_scope.where("submitted_at >= ?", @since_time) if @since_time
+    subs_scope = subs_scope.where("submitted_at <= ?", @until_time) if @until_time
+    if params[:language_id].present? && params[:language_id] != 'all'
+      subs_scope = subs_scope.where(language_id: params[:language_id])
+    end
+
+    # Exclude admins
+    admin_ids = User.joins(:roles).where(roles: { name: 'admin' }).pluck(:id)
+    subs_scope = subs_scope.where.not(user_id: admin_ids)
+
+    # 1. Most Effort (Most submissions)
+    @most_effort = subs_scope.group(:user_id).order('count_all DESC').limit(10).count
+    @most_effort_users = User.where(id: @most_effort.keys).index_by(&:id)
+
+    # 2. Latest Passed Submission
+    @latest_passed = subs_scope.where("points >= 100").order(submitted_at: :desc).limit(10).includes(:user, :problem, :language)
+
+    # 3. Latest Submission
+    @latest_sub = subs_scope.order(submitted_at: :desc).limit(10).includes(:user, :problem, :language)
+
+    # 4. First Bloods
+    # Submissions that were the first to get >= 100 for a problem
+    # Subquery: MIN(submitted_at) for each problem where points >= 100
+    # For sqlite compatibility, we might do this in memory if problem count is small, or with a group.
+    first_pass_subs = subs_scope.where("points >= 100").group(:problem_id).select('problem_id, MIN(submitted_at) as first_time')
+    
+    first_bloods_query = subs_scope.where("points >= 100")
+      .joins("INNER JOIN (#{first_pass_subs.to_sql}) fp ON submissions.problem_id = fp.problem_id AND submissions.submitted_at = fp.first_time")
+    
+    @first_bloods = first_bloods_query.group(:user_id).order('count_all DESC').limit(10).count
+    @first_bloods_users = User.where(id: @first_bloods.keys).index_by(&:id)
+
+    # The following require getting the "best" passed submission per problem per user
+    # Max score per user per problem
+    passed_subs = subs_scope.where("points >= 100")
+    
+    # 5. Most Efficient Coder (Least accumulated code length)
+    # We find the min length per problem per user, then sum
+    min_len = passed_subs.group('user_id, problem_id').select('user_id, MIN(COALESCE(effective_code_length, 999999)) as min_len')
+    @least_chars = User.joins("INNER JOIN (#{min_len.to_sql}) ml ON users.id = ml.user_id").group('users.id').order('SUM(ml.min_len) ASC').limit(10).sum('ml.min_len')
+    
+    # 6. Fastest Runtime
+    min_time = passed_subs.group('user_id, problem_id').select('user_id, MIN(COALESCE(max_runtime, 999999)) as min_time')
+    @fastest_runtime = User.joins("INNER JOIN (#{min_time.to_sql}) mt ON users.id = mt.user_id").group('users.id').order('SUM(mt.min_time) ASC').limit(10).sum('mt.min_time')
+
+    # 7. Least Memory
+    min_mem = passed_subs.group('user_id, problem_id').select('user_id, MIN(COALESCE(peak_memory, 999999)) as min_mem')
+    @least_memory = User.joins("INNER JOIN (#{min_mem.to_sql}) mm ON users.id = mm.user_id").group('users.id').order('SUM(mm.min_mem) ASC').limit(10).sum('mm.min_mem')
+
+    # 8. Score Growth
+    if @since_time && @until_time
+      # Score at since_time
+      score_since = Submission.where("submitted_at <= ?", @since_time).where.not(user_id: admin_ids).group('user_id, problem_id').select('user_id, MAX(points) as max_pts')
+      sum_since = User.joins("LEFT JOIN (#{score_since.to_sql}) ss ON users.id = ss.user_id").group('users.id').sum('COALESCE(ss.max_pts, 0)')
+
+      # Score at until_time
+      score_until = Submission.where("submitted_at <= ?", @until_time).where.not(user_id: admin_ids).group('user_id, problem_id').select('user_id, MAX(points) as max_pts')
+      sum_until = User.joins("LEFT JOIN (#{score_until.to_sql}) su ON users.id = su.user_id").group('users.id').sum('COALESCE(su.max_pts, 0)')
+
+      @score_growth = {}
+      sum_until.each do |user_id, score|
+        growth = score - (sum_since[user_id] || 0)
+        @score_growth[user_id] = growth if growth > 0
+      end
+      @score_growth = @score_growth.sort_by { |_, v| -v }.take(10).to_h
+      @score_growth_users = User.where(id: @score_growth.keys).index_by(&:id)
+    end
+  end
+
   def problem_hof
   end
 
