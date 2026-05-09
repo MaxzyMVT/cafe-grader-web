@@ -44,6 +44,7 @@ Rails.application.routes.draw do
   end
 
   get "sources/direct_edit"
+  get "scoreboard", to: "scoreboard#index"
 
   root to: 'main#login'
 

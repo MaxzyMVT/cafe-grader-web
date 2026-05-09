@@ -8,6 +8,27 @@ CONFIGURATIONS =
    },
 
    {
+     key: 'system.scoreboard_enabled',
+     value_type: 'boolean',
+     default_value: 'true',
+     description: 'Enable the Real-time Score Board feature'
+   },
+
+   {
+     key: 'system.scoreboard_public_accessible',
+     value_type: 'boolean',
+     default_value: 'false',
+     description: 'Enable public scoreboard'
+   },
+
+   {
+     key: 'system.scoreboard_include_admins',
+     value_type: 'boolean',
+     default_value: 'false',
+     description: 'Include admins in the public scoreboard'
+   },
+
+   {
      key: 'ui.front.title',
      value_type: 'string',
      default_value: 'Grader'
