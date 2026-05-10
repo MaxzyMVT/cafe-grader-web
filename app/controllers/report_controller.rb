@@ -250,7 +250,7 @@ class ReportController < ApplicationController
     end
 
     # Base submissions scope based on time
-    subs_scope = Submission.joins(:problem).all
+    subs_scope = Submission.joins("INNER JOIN problems ON problems.id = submissions.problem_id")
     subs_scope = subs_scope.where("submitted_at >= ?", @since_time) if @since_time
     subs_scope = subs_scope.where("submitted_at <= ?", @until_time) if @until_time
     if params[:language_id].present? && params[:language_id] != 'all'
@@ -315,11 +315,11 @@ class ReportController < ApplicationController
     # 8. Score Growth
     if @since_time && @until_time
       # Score at since_time
-      score_since = Submission.joins(:problem).where("submitted_at <= ?", @since_time).where.not(user_id: admin_ids).group('user_id, problem_id').select('user_id, MAX(points) as max_pts')
+      score_since = Submission.joins("INNER JOIN problems ON problems.id = submissions.problem_id").where("submitted_at <= ?", @since_time).where.not(user_id: admin_ids).group('user_id, problem_id').select('user_id, MAX(points) as max_pts')
       sum_since = User.joins("LEFT JOIN (#{score_since.to_sql}) ss ON users.id = ss.user_id").group('users.id').sum('COALESCE(ss.max_pts, 0)')
 
       # Score at until_time
-      score_until = Submission.joins(:problem).where("submitted_at <= ?", @until_time).where.not(user_id: admin_ids).group('user_id, problem_id').select('user_id, MAX(points) as max_pts')
+      score_until = Submission.joins("INNER JOIN problems ON problems.id = submissions.problem_id").where("submitted_at <= ?", @until_time).where.not(user_id: admin_ids).group('user_id, problem_id').select('user_id, MAX(points) as max_pts')
       sum_until = User.joins("LEFT JOIN (#{score_until.to_sql}) su ON users.id = su.user_id").group('users.id').sum('COALESCE(su.max_pts, 0)')
 
       @score_growth = {}
