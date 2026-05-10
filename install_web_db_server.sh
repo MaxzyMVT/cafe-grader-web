@@ -147,16 +147,18 @@ bundle install
 # ---------------------------------------------------------------
 # 5. Rails master key + credentials
 # ---------------------------------------------------------------
-echo "[5/9] Generating Rails master key..."
-if [ ! -f config/master.key ]; then
-  cp config/credentials.yml.SAMPLE config/credentials.yml.enc
-  openssl rand -hex 32 > config/master.key
-  chmod 600 config/master.key
-  echo "  master.key generated."
-  echo "  *** BACK UP $APP_DIR/config/master.key ***"
-else
-  echo "  master.key already exists, skipping."
-fi
+echo "[5/9] Generating Rails master key and credentials..."
+
+# Remove any stale/mismatched key+credentials pair. A mismatch causes:
+#   ActiveSupport::MessageEncryptor::InvalidMessage: missing separator
+# at db:migrate time because Rails decrypts credentials during environment
+# load (config/environment.rb:5). EDITOR=true runs non-interactively.
+rm -f config/master.key config/credentials.yml.enc
+
+EDITOR=true bundle exec rails credentials:edit
+chmod 600 config/master.key
+echo "  master.key and credentials.yml.enc generated (matched pair)."
+echo "  *** BACK UP $APP_DIR/config/master.key ***"
 
 # ---------------------------------------------------------------
 # 6. Database setup + asset compilation

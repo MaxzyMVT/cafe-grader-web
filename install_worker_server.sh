@@ -243,17 +243,19 @@ fi
 # ---------------------------------------------------------------
 # 8. Rails master key + credentials (needed to boot Rails runner)
 # ---------------------------------------------------------------
-echo "[8/10] Generating Rails master key..."
-if [ ! -f config/master.key ]; then
-  cp config/credentials.yml.SAMPLE config/credentials.yml.enc
-  openssl rand -hex 32 > config/master.key
-  chmod 600 config/master.key
-  echo "  master.key generated."
-  echo "  NOTE: This key is independent from Server 1's key — credentials"
-  echo "  are not shared between servers, which is fine for worker nodes."
-else
-  echo "  master.key already exists, skipping."
-fi
+echo "[8/10] Generating Rails master key and credentials..."
+
+# Remove any stale/mismatched key+credentials pair. A mismatch causes:
+#   ActiveSupport::MessageEncryptor::InvalidMessage: missing separator
+# at db:migrate time because Rails decrypts credentials during environment
+# load (config/environment.rb:5). EDITOR=true runs non-interactively.
+rm -f config/master.key config/credentials.yml.enc
+
+EDITOR=true bundle exec rails credentials:edit
+chmod 600 config/master.key
+echo "  master.key and credentials.yml.enc generated (matched pair)."
+echo "  NOTE: This key is independent from Server 1's key — credentials"
+echo "  are not shared between servers, which is fine for worker nodes."
 
 # ---------------------------------------------------------------
 # 9. Grader workers + whenever crontab as systemd services

@@ -249,16 +249,25 @@ bundle install
 # ---------------------------------------------------------------
 # 8. Rails master key + credentials
 # ---------------------------------------------------------------
-echo "[8/13] Generating Rails master key..."
-if [ ! -f config/master.key ]; then
-  cp config/credentials.yml.SAMPLE config/credentials.yml.enc
-  openssl rand -hex 32 > config/master.key
-  chmod 600 config/master.key
-  echo "  master.key generated."
-  echo "  *** BACK UP $APP_DIR/config/master.key ***"
-else
-  echo "  master.key already exists, skipping."
-fi
+echo "[8/13] Generating Rails master key and credentials..."
+
+# Remove any stale/mismatched key+credentials pair left from a previous run
+# or copied from the repo's SAMPLE. A mismatch causes:
+#   ActiveSupport::MessageEncryptor::InvalidMessage: missing separator
+# at db:migrate/db:setup time because Rails tries to decrypt credentials
+# during environment load (config/environment.rb:5).
+#
+# The correct approach is to let Rails generate a matched key+credentials
+# pair from scratch using `credentials:edit`. We use a throwaway EDITOR
+# (true) so the command completes non-interactively without opening a text
+# editor. This writes a fresh encrypted credentials.yml.enc and master.key
+# that are always in sync.
+rm -f config/master.key config/credentials.yml.enc
+
+EDITOR=true bundle exec rails credentials:edit
+chmod 600 config/master.key
+echo "  master.key and credentials.yml.enc generated (matched pair)."
+echo "  *** BACK UP $APP_DIR/config/master.key ***"
 
 # ---------------------------------------------------------------
 # 9. Python venv for grader engine
