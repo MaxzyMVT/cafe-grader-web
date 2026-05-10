@@ -269,7 +269,7 @@ class ReportController < ApplicationController
     effort_counts = subs_scope.group(:user_id).order('count_all DESC').limit(10).count
     if effort_counts.any?
       threshold = effort_counts.values.last
-      @most_effort = subs_scope.group(:user_id).having("count(*) >= ?", threshold).order('count(*) DESC').count
+      @most_effort = subs_scope.group(:user_id).having("count(*) >= ?", threshold).order(Arel.sql('count(*) DESC')).count
     else
       @most_effort = {}
     end
@@ -289,10 +289,10 @@ class ReportController < ApplicationController
       .joins("INNER JOIN (#{first_pass_subs.to_sql}) fp ON submissions.problem_id = fp.problem_id AND submissions.submitted_at = fp.first_time")
       .group(:user_id)
 
-    fb_top = fb_base.order('count_all DESC').limit(10).count
+    fb_top = fb_base.order(Arel.sql('count(*) DESC')).limit(10).count
     if fb_top.any?
       threshold = fb_top.values.last
-      @first_bloods = fb_base.having("count(*) >= ?", threshold).order('count(*) DESC').count
+      @first_bloods = fb_base.having("count(*) >= ?", threshold).order(Arel.sql('count(*) DESC')).count
     else
       @first_bloods = {}
     end
@@ -307,10 +307,10 @@ class ReportController < ApplicationController
       .select('submissions.user_id, MIN(effective_code_length) as min_len')
     
     chars_base = User.joins("INNER JOIN (#{min_len.to_sql}) ml ON users.id = ml.user_id").group('users.id')
-    chars_top = chars_base.order('SUM(ml.min_len) ASC').limit(10).sum('ml.min_len')
+    chars_top = chars_base.order(Arel.sql('SUM(ml.min_len) ASC')).limit(10).sum('ml.min_len')
     if chars_top.any?
       threshold = chars_top.values.last
-      @least_chars = chars_base.having("SUM(ml.min_len) <= ?", threshold).order('SUM(ml.min_len) ASC').sum('ml.min_len')
+      @least_chars = chars_base.having("SUM(ml.min_len) <= ?", threshold).order(Arel.sql('SUM(ml.min_len) ASC')).sum('ml.min_len')
     else
       @least_chars = {}
     end
@@ -321,10 +321,10 @@ class ReportController < ApplicationController
       .select('submissions.user_id, MIN(max_runtime) as min_time')
     
     time_base = User.joins("INNER JOIN (#{min_time.to_sql}) mt ON users.id = mt.user_id").group('users.id')
-    time_top = time_base.order('SUM(mt.min_time) ASC').limit(10).sum('mt.min_time')
+    time_top = time_base.order(Arel.sql('SUM(mt.min_time) ASC')).limit(10).sum('mt.min_time')
     if time_top.any?
       threshold = time_top.values.last
-      @fastest_runtime = time_base.having("SUM(mt.min_time) <= ?", threshold).order('SUM(mt.min_time) ASC').sum('mt.min_time')
+      @fastest_runtime = time_base.having("SUM(mt.min_time) <= ?", threshold).order(Arel.sql('SUM(mt.min_time) ASC')).sum('mt.min_time')
     else
       @fastest_runtime = {}
     end
@@ -335,10 +335,10 @@ class ReportController < ApplicationController
       .select('submissions.user_id, MIN(peak_memory) as min_mem')
     
     mem_base = User.joins("INNER JOIN (#{min_mem.to_sql}) mm ON users.id = mm.user_id").group('users.id')
-    mem_top = mem_base.order('SUM(mm.min_mem) ASC').limit(10).sum('mm.min_mem')
+    mem_top = mem_base.order(Arel.sql('SUM(mm.min_mem) ASC')).limit(10).sum('mm.min_mem')
     if mem_top.any?
       threshold = mem_top.values.last
-      @least_memory = mem_base.having("SUM(mm.min_mem) <= ?", threshold).order('SUM(mm.min_mem) ASC').sum('mm.min_mem')
+      @least_memory = mem_base.having("SUM(mm.min_mem) <= ?", threshold).order(Arel.sql('SUM(mm.min_mem) ASC')).sum('mm.min_mem')
     else
       @least_memory = {}
     end
