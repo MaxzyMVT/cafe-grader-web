@@ -20,6 +20,23 @@ class VivaSessionsController < ApplicationController
       redirect_to list_main_path, alert: 'Viva language is not seeded. Run Language.seed.' and return
     end
 
+    setup_errors = @problem.viva_setup_errors
+    if setup_errors.any?
+      redirect_to list_main_path,
+                  alert: "Cannot start viva for '#{@problem.name}' — problem setup is incomplete: #{setup_errors.join('; ')}"
+      return
+    end
+
+    # Defensive: if the user already has an active (non-archived) viva
+    # submission for this problem, the Start Viva button shouldn't be
+    # visible — but a stale browser tab or a direct curl POST could land
+    # here anyway. Refuse with a clear flash.
+    if @problem.submissions.where(user: @current_user, viva_archived_at: nil).exists?
+      redirect_to list_main_path,
+                  alert: "You already have an active viva session for '#{@problem.name}'. An admin can archive it from the viva page if you need to retake."
+      return
+    end
+
     submission = nil
     placeholder = nil
     Submission.transaction do
@@ -44,10 +61,7 @@ class VivaSessionsController < ApplicationController
 
   # GET /submissions/:submission_id/viva
   def show
-    @turns = @submission.viva_turns.ordered
-    @viva_grade = @submission.viva_grade
-    @pending_turn = @submission.viva_turns.where(status: :processing).exists?
-    @finished = @submission.status == 'done' || @submission.status == 'grader_error'
+    load_viva_state
   end
 
   # POST /submissions/:submission_id/viva/turns
@@ -56,8 +70,14 @@ class VivaSessionsController < ApplicationController
       redirect_to list_main_path, alert: 'Authorization error.' and return
     end
 
-    if @submission.status == 'done' || @submission.status == 'grader_error'
+    case @submission.status.to_s
+    when 'done', 'grader_error'
       redirect_to viva_submission_path(@submission), alert: 'This viva session has ended.' and return
+    when 'evaluating'
+      # Interview already ended (LLM emitted [[VIVA_DONE]]); a grade job is
+      # in flight. Accepting a new student turn here would race with the
+      # grader and corrupt the transcript, so refuse.
+      redirect_to viva_submission_path(@submission), alert: 'Interview ended — grading in progress.' and return
     end
 
     if @submission.viva_turns.where(status: :processing).exists?
@@ -93,10 +113,7 @@ class VivaSessionsController < ApplicationController
 
   # GET /submissions/:submission_id/viva/refresh
   def refresh
-    @turns = @submission.viva_turns.ordered
-    @viva_grade = @submission.viva_grade
-    @pending_turn = @submission.viva_turns.where(status: :processing).exists?
-    @finished = @submission.status == 'done' || @submission.status == 'grader_error'
+    load_viva_state
     render partial: 'viva_session', locals: {
       submission:   @submission,
       turns:        @turns,
@@ -107,6 +124,24 @@ class VivaSessionsController < ApplicationController
   end
 
   private
+
+  # Shared by #show and #refresh. The "pending" flag drives both polling
+  # (keep refreshing while the backend is still doing work) and the
+  # answer-form's disabled state. It's true while a turn is being
+  # generated *or* the grader is running, so the UI keeps polling
+  # until the grade lands or fails.
+  #
+  # The "finished" flag drives whether the answer form is shown at all
+  # — once we're in :evaluating, :done, or :grader_error, the student
+  # can't submit more answers, and the view falls through to either
+  # "Grading in progress…", the grade card, or a "Grader error" alert.
+  def load_viva_state
+    @turns        = @submission.viva_turns.ordered
+    @viva_grade   = @submission.viva_grade
+    @pending_turn = @submission.viva_turns.where(status: :processing).exists? ||
+                    @submission.status == 'evaluating'
+    @finished     = %w[done grader_error evaluating].include?(@submission.status.to_s)
+  end
 
   def set_problem
     @problem = Problem.find(params[:id] || params[:problem_id])

@@ -159,6 +159,40 @@ class Problem < ApplicationRecord
     tags.where(kind: :llm_prompt)
   end
 
+  # Required-section markers a viva problem's llm_prompt content must
+  # contain. Keeping this as a constant so it's easy to relax / extend
+  # without rewriting the validation method. The scenario itself is
+  # delivered to the model via the attached statement PDF, not via
+  # problem.description, so we don't validate the description text.
+  VIVA_PROMPT_REQUIRED_SECTIONS = {
+    /^#+\s*Rubric\b/im => "an llm_prompt section starting with '# Rubric' (or ##/###)"
+  }.freeze
+
+  # Returns an array of human-readable error strings if the problem isn't
+  # set up correctly to run a viva — empty array means good to go. Called
+  # from VivaSessionsController#start before any LLM work happens, so the
+  # student gets a clear flash message instead of the viva starting in a
+  # half-configured state.
+  def viva_setup_errors
+    return [] unless viva_exam?
+    errors = []
+
+    prompt = viva_prompt_tags.map(&:params).reject(&:blank?).join("\n\n")
+    if prompt.blank?
+      errors << "Problem has no llm_prompt tag attached"
+    else
+      VIVA_PROMPT_REQUIRED_SECTIONS.each do |pattern, label|
+        errors << "llm_prompt is missing #{label}" unless prompt =~ pattern
+      end
+    end
+
+    errors
+  end
+
+  def viva_setup_valid?
+    viva_setup_errors.empty?
+  end
+
   def can_view_testcase
     GraderConfiguration.show_testcase && self.view_testcase
   end
