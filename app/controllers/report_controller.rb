@@ -288,8 +288,8 @@ class ReportController < ApplicationController
     # The following require getting the "best" passed submission per problem per user
     
     # 5. Most Efficient Coder (Least accumulated code length)
-    # Exclude the "999999" placeholder
-    min_len = passed_scope.where("effective_code_length < 999999")
+    # Exclude the "999999" placeholder and NULLs
+    min_len = passed_scope.where("effective_code_length IS NOT NULL AND effective_code_length < 999999")
       .group('submissions.user_id, submissions.problem_id')
       .select('submissions.user_id, MIN(effective_code_length) as min_len')
     
@@ -297,7 +297,7 @@ class ReportController < ApplicationController
       .group('users.id').order('SUM(ml.min_len) ASC').limit(10).sum('ml.min_len')
     
     # 6. Fastest Runtime
-    min_time = passed_scope.where("max_runtime < 999999")
+    min_time = passed_scope.where("max_runtime IS NOT NULL AND max_runtime < 999999")
       .group('submissions.user_id, submissions.problem_id')
       .select('submissions.user_id, MIN(max_runtime) as min_time')
     
@@ -305,7 +305,7 @@ class ReportController < ApplicationController
       .group('users.id').order('SUM(mt.min_time) ASC').limit(10).sum('mt.min_time')
 
     # 7. Least Memory
-    min_mem = passed_scope.where("peak_memory < 999999")
+    min_mem = passed_scope.where("peak_memory IS NOT NULL AND peak_memory < 999999")
       .group('submissions.user_id, submissions.problem_id')
       .select('submissions.user_id, MIN(peak_memory) as min_mem')
     
