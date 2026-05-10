@@ -266,7 +266,13 @@ class ReportController < ApplicationController
     passed_scope = subs_scope.where("submissions.points >= COALESCE(problems.full_score, 100)")
 
     # 1. Most Effort (Most submissions)
-    @most_effort = subs_scope.group(:user_id).order('count_all DESC').limit(10).count
+    effort_counts = subs_scope.group(:user_id).order('count_all DESC').limit(10).count
+    if effort_counts.any?
+      threshold = effort_counts.values.last
+      @most_effort = subs_scope.group(:user_id).having("count(*) >= ?", threshold).order('count(*) DESC').count
+    else
+      @most_effort = {}
+    end
     @most_effort_users = User.where(id: @most_effort.keys).index_by(&:id)
 
     # 2. Latest Passed Submission
@@ -279,10 +285,17 @@ class ReportController < ApplicationController
     # Submissions that were the first to get >= full_score for a problem
     first_pass_subs = passed_scope.group(:problem_id).select('submissions.problem_id, MIN(submissions.submitted_at) as first_time')
     
-    first_bloods_query = passed_scope
+    fb_base = passed_scope
       .joins("INNER JOIN (#{first_pass_subs.to_sql}) fp ON submissions.problem_id = fp.problem_id AND submissions.submitted_at = fp.first_time")
-    
-    @first_bloods = first_bloods_query.group(:user_id).order('count_all DESC').limit(10).count
+      .group(:user_id)
+
+    fb_top = fb_base.order('count_all DESC').limit(10).count
+    if fb_top.any?
+      threshold = fb_top.values.last
+      @first_bloods = fb_base.having("count(*) >= ?", threshold).order('count(*) DESC').count
+    else
+      @first_bloods = {}
+    end
     @first_bloods_users = User.where(id: @first_bloods.keys).index_by(&:id)
 
     # The following require getting the "best" passed submission per problem per user
@@ -293,24 +306,42 @@ class ReportController < ApplicationController
       .group('submissions.user_id, submissions.problem_id')
       .select('submissions.user_id, MIN(effective_code_length) as min_len')
     
-    @least_chars = User.joins("INNER JOIN (#{min_len.to_sql}) ml ON users.id = ml.user_id")
-      .group('users.id').order('SUM(ml.min_len) ASC').limit(10).sum('ml.min_len')
+    chars_base = User.joins("INNER JOIN (#{min_len.to_sql}) ml ON users.id = ml.user_id").group('users.id')
+    chars_top = chars_base.order('SUM(ml.min_len) ASC').limit(10).sum('ml.min_len')
+    if chars_top.any?
+      threshold = chars_top.values.last
+      @least_chars = chars_base.having("SUM(ml.min_len) <= ?", threshold).order('SUM(ml.min_len) ASC').sum('ml.min_len')
+    else
+      @least_chars = {}
+    end
     
     # 6. Fastest Runtime
     min_time = passed_scope.where("max_runtime IS NOT NULL AND max_runtime < 999999")
       .group('submissions.user_id, submissions.problem_id')
       .select('submissions.user_id, MIN(max_runtime) as min_time')
     
-    @fastest_runtime = User.joins("INNER JOIN (#{min_time.to_sql}) mt ON users.id = mt.user_id")
-      .group('users.id').order('SUM(mt.min_time) ASC').limit(10).sum('mt.min_time')
+    time_base = User.joins("INNER JOIN (#{min_time.to_sql}) mt ON users.id = mt.user_id").group('users.id')
+    time_top = time_base.order('SUM(mt.min_time) ASC').limit(10).sum('mt.min_time')
+    if time_top.any?
+      threshold = time_top.values.last
+      @fastest_runtime = time_base.having("SUM(mt.min_time) <= ?", threshold).order('SUM(mt.min_time) ASC').sum('mt.min_time')
+    else
+      @fastest_runtime = {}
+    end
 
     # 7. Least Memory
     min_mem = passed_scope.where("peak_memory IS NOT NULL AND peak_memory < 999999")
       .group('submissions.user_id, submissions.problem_id')
       .select('submissions.user_id, MIN(peak_memory) as min_mem')
     
-    @least_memory = User.joins("INNER JOIN (#{min_mem.to_sql}) mm ON users.id = mm.user_id")
-      .group('users.id').order('SUM(mm.min_mem) ASC').limit(10).sum('mm.min_mem')
+    mem_base = User.joins("INNER JOIN (#{min_mem.to_sql}) mm ON users.id = mm.user_id").group('users.id')
+    mem_top = mem_base.order('SUM(mm.min_mem) ASC').limit(10).sum('mm.min_mem')
+    if mem_top.any?
+      threshold = mem_top.values.last
+      @least_memory = mem_base.having("SUM(mm.min_mem) <= ?", threshold).order('SUM(mm.min_mem) ASC').sum('mm.min_mem')
+    else
+      @least_memory = {}
+    end
 
     # 8. Score Growth
     if @since_time && @until_time
