@@ -179,7 +179,7 @@ class Contest < ApplicationRecord
       .select('COUNT(comments.id) as llm_count')
       .select('user_id', 'problem_id')
 
-    hint_reveal = Comment.hint_reveal_for_problems(self.problems.where(enabled: true), (self.start)..(self.stop))
+    hint_reveal = Comment.hint_reveal_for_problems(self.problems.where(available: true), (self.start)..(self.stop))
       .select('comment_reveals.user_id as user_id')
       .select('comments.commentable_id as problem_id')
       .select('SUM(comments.cost) as hint_cost')
