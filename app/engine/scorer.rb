@@ -72,22 +72,24 @@ class Scorer
 
     last_group = max_group[:group]+2
     sum_user_score, sum_total_weight = 0.to_d, 0.to_d
-    max_score = 0
-    grp_weight = 0
+    max_weighted_score = 0
+    max_grp_weight = 0
     evs.each do |ev|
       group = ev[:group]
       score = ev[:score] || 0
       weight = ev[:weight] || 0
 
       if last_group != group
-        sum_user_score += max_score * grp_weight
-        sum_total_weight += grp_weight
+        # save result of the previous group
+        sum_user_score += max_weighted_score
+        sum_total_weight += max_grp_weight
 
-        max_score = score
-        grp_weight = weight
+        # reset for the new group
+        max_weighted_score = score * weight
+        max_grp_weight = weight
       else
-        max_score = [max_score, score].max
-        grp_weight = [grp_weight, weight].max
+        max_weighted_score = [max_weighted_score, score * weight].max
+        max_grp_weight = [max_grp_weight, weight].max
       end
       last_group = group
     end
