@@ -405,6 +405,14 @@ class ProblemsController < ApplicationController
     @problem = pi.problem
     @dataset = pi.dataset
     @problem.datasets.reload
+
+    @active_dataset_tab = '#testcases'
+    @toast = {title: 'Import Successful', body: @updated}
+
+    respond_to do |format|
+      format.turbo_stream { render 'datasets/update' }
+      format.html { render :import }
+    end
   end
 
 

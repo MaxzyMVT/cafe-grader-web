@@ -8,7 +8,7 @@ class DatasetsController < ApplicationController
 
   before_action :set_dataset, only: %i[ edit update destroy
                                         file_delete file_view file_download
-                                        testcase_input testcase_sol testcase_delete
+                                        testcase_input testcase_sol testcase_delete testcase_delete_all
                                         view set_as_live rejudge set_weight
                                         settings files testcases
                                       ]
@@ -16,7 +16,7 @@ class DatasetsController < ApplicationController
   before_action :group_editor_authorization
   before_action :can_view_problem, only: VIEW_METHOD
   before_action :can_edit_problem, except: VIEW_METHOD
-  before_action :set_active_tab, only: %i[edit view testcase_delete set_weight set_as_live update
+  before_action :set_active_tab, only: %i[edit view testcase_delete testcase_delete_all set_weight set_as_live update
                                           settings files testcases]
 
   # GET /datasets/new
@@ -142,11 +142,32 @@ class DatasetsController < ApplicationController
   # as turbo
   def testcase_delete
     tc = Testcase.find(params[:tc_id])
+    num = tc.num
     tc.destroy
 
+    @active_dataset_tab = '#testcases'
     @toast = {title: 'Testcase changed',
-              body: "Testcase ##{tc.num} is deleted."}
-    render :update
+              body: "Testcase ##{num} is deleted."}
+    
+    respond_to do |format|
+      format.turbo_stream { render :update }
+      format.html { render :update }
+    end
+  end
+
+  # as turbo
+  def testcase_delete_all
+    count = @dataset.testcases.count
+    @dataset.testcases.destroy_all
+
+    @active_dataset_tab = '#testcases'
+    @toast = {title: 'Testcase changed',
+              body: "All #{count} testcases are deleted."}
+    
+    respond_to do |format|
+      format.turbo_stream { render :update }
+      format.html { render :update }
+    end
   end
 
   def set_weight

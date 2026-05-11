@@ -161,6 +161,7 @@ Rails.application.routes.draw do
       post 'testcase/input/:tc_id', action: 'testcase_input', as: 'testcase_input'
       post 'testcase/sol/:tc_id', action: 'testcase_sol', as: 'testcase_sol'
       post 'testcase/delete/:tc_id', action: 'testcase_delete', as: 'testcase_delete'
+      post 'testcase/delete_all', action: 'testcase_delete_all', as: 'testcase_delete_all'
       post 'set_as_live'
       post 'view'
       post 'rejudge'

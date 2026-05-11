@@ -11,6 +11,8 @@
     = text_field_tag :weight_param, nil, class: 'form-control'
   .col-12
     = f.submit 'Set', class: 'btn btn-primary'
+  .col-12
+    = link_to 'Delete All Testcases', testcase_delete_all_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'This will delete ALL testcases in this dataset. Are you sure?' }, class: 'btn btn-outline-danger'
 %table.datatable.table-hover{style: 'width: 100%'}
   %thead
     %tr

@@ -1,4 +1,5 @@
 = turbo_stream.update :dataset_select, partial: 'datasets/dataset_select', locals: {ds: @dataset, problem: @dataset.problem}
 = turbo_stream.update :dataset, partial: 'datasets/form', locals: {ds: @dataset}
+= turbo_stream.update :dataset_testcases, partial: 'datasets/testcases', locals: {ds: @dataset}
 - if @toast
   = turbo_stream.append 'toast-area', partial: 'toast', locals: {toast: @toast}

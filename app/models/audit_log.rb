@@ -2,7 +2,7 @@ class AuditLog < ApplicationRecord
   REDACTED = "[redacted]".freeze
 
   belongs_to :user, optional: true
-  belongs_to :auditable, polymorphic: true
+  belongs_to :auditable, polymorphic: true, optional: true
 
   alias_attribute :diff, :object_changes
 
