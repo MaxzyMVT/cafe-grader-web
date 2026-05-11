@@ -32,13 +32,14 @@
                 = first_case.group_name.present? ? first_case.group_name.upcase : "GROUP #{group_id.presence || 'N/A'}"
               .d-flex.flex-wrap.gap-1
                 - cases.each do |tc|
-                  %button.btn.btn-sm.rounded-circle.p-0.d-flex.align-items-center.justify-content-center{type: :button, role: 'tab', data: {bs: {toggle: 'tab', target: "#tc#{tc.id}"}}, 'aria-controls' => "tc#{tc.id}", 'aria-selected' => (@dataset.testcases.first == tc), class: (@dataset.testcases.first == tc ? 'btn-primary shadow-sm active' : 'btn-outline-secondary'), style: "width: 32px; height: 32px; font-size: 0.8rem;"}
+                  %button.btn-case-selector{type: :button, role: 'tab', data: {bs: {toggle: 'tab', target: "#tc#{tc.id}"}}, 'aria-controls' => "tc#{tc.id}", 'aria-selected' => (@dataset.testcases.first == tc), class: (@dataset.testcases.first == tc ? 'active' : '')}
                     = tc.num
         - else
           .d-flex.flex-wrap.gap-1
             - @dataset.testcases.each do |tc|
-              %button.btn.btn-sm.rounded-circle.p-0.d-flex.align-items-center.justify-content-center{type: :button, role: 'tab', data: {bs: {toggle: 'tab', target: "#tc#{tc.id}"}}, 'aria-controls' => "tc#{tc.id}", 'aria-selected' => (@dataset.testcases.first == tc), class: (@dataset.testcases.first == tc ? 'btn-primary shadow-sm active' : 'btn-outline-secondary'), style: "width: 32px; height: 32px; font-size: 0.8rem;"}
+              %button.btn-case-selector{type: :button, role: 'tab', data: {bs: {toggle: 'tab', target: "#tc#{tc.id}"}}, 'aria-controls' => "tc#{tc.id}", 'aria-selected' => (@dataset.testcases.first == tc), class: (@dataset.testcases.first == tc ? 'active' : '')}
                 = tc.num
+
 
 
 
