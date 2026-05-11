@@ -22,15 +22,23 @@
 
   .card.card-shadow.border-0.mb-4
     .card-body.p-3.bg-surface-alt
+      - grouped_cases = @dataset.testcases.group_by(&:group).sort
       .d-flex.flex-column.gap-3
-        - @dataset.testcases.group_by(&:group).sort.each do |group_id, cases|
-          .d-flex.align-items-center.gap-2
-            .badge.bg-secondary-subtle.text-secondary.border.border-secondary-subtle.px-2.py-1.small.fw-bold{style: "min-width: 80px;"}
-              = "GROUP #{group_id}"
-            .d-flex.flex-wrap.gap-1
-              - cases.each do |tc|
-                %a.btn.btn-sm.rounded-circle.p-0.d-flex.align-items-center.justify-content-center{href:"#", role: 'tab', data: {bs: {toggle: 'tab', target: "#tc#{tc.id}"}}, class: (@dataset.testcases.first == tc ? 'btn-primary shadow-sm active' : 'btn-outline-secondary'), style: "width: 32px; height: 32px; font-size: 0.8rem;"}
-                  = tc.num
+        - if grouped_cases.size > 1
+          - grouped_cases.each do |group_id, cases|
+            .d-flex.align-items-center.gap-2
+              .badge.bg-secondary-subtle.text-secondary.border.border-secondary-subtle.px-2.py-1.small.fw-bold{style: "min-width: 80px;"}
+                = "GROUP #{group_id.presence || 'N/A'}"
+              .d-flex.flex-wrap.gap-1
+                - cases.each do |tc|
+                  %a.btn.btn-sm.rounded-circle.p-0.d-flex.align-items-center.justify-content-center{href:"#", role: 'tab', data: {bs: {toggle: 'tab', target: "#tc#{tc.id}"}}, class: (@dataset.testcases.first == tc ? 'btn-primary shadow-sm active' : 'btn-outline-secondary'), style: "width: 32px; height: 32px; font-size: 0.8rem;"}
+                    = tc.num
+        - else
+          .d-flex.flex-wrap.gap-1
+            - @dataset.testcases.each do |tc|
+              %a.btn.btn-sm.rounded-circle.p-0.d-flex.align-items-center.justify-content-center{href:"#", role: 'tab', data: {bs: {toggle: 'tab', target: "#tc#{tc.id}"}}, class: (@dataset.testcases.first == tc ? 'btn-primary shadow-sm active' : 'btn-outline-secondary'), style: "width: 32px; height: 32px; font-size: 0.8rem;"}
+                = tc.num
+
 
   .tab-content
     - @dataset.testcases.each.with_index do |tc,id|
