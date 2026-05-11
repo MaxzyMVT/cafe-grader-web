@@ -150,6 +150,17 @@ Cheers!
     example_cpp: "For example, suppose you are using <tt>C++</tt> to write task <b>mobiles</b>, you put the following on top of your source code."
     example_pas: "If you are using <tt>Pascal</tt> to write the same task, you'll use"
     ask_questions_at_messages: "If you have any problems, you can ask at [<a href=\"%{url}\">%{message_link_name}</a>]."
+    grading_legend:
+      title: Grading Legend
+      symbol: Symbol
+      meaning: Meaning
+      p: Correct Answer
+      wrong: Wrong Answer
+      s: Skipped (Another option in this group already passed)
+      t: Time Limit Exceeded
+      m: Memory Limit Exceeded
+      x: Program Crashed
+      group_info: "[ ... ] indicates a group of test cases"
 
   activerecord:
     attributes:
@@ -178,6 +189,7 @@ Cheers!
           crash: Program Crashed
           unknown_error: UNKNOWN ERROR
           grader_error: GRADER ERROR
+          skipped: Skipped
       contest:
         finalized: Read Only
   errors:

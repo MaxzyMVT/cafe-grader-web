@@ -147,12 +147,33 @@ th:
     example_cpp: "ยกตัวอย่างเช่น ถ้าคุณใช้ภาษา <tt>C++</tt> สำหรับเขียนโจทย์ <tt>mobiles</tt> ตอนต้นโปรแกรมคุณจะใส่ดังนี้"
     example_pas: "ถ้าคุณใช้ภาษา <tt>Pascal</tt> เพื่อเขียนโจทย์ข้อเดียวกัน คุณจะระบุ"
     ask_questions_at_messages: "ถ้ามีปัญหาในการใช้งานสามารถสอบถามได้ที่หน้า<a href=\"%{url}\">%{message_link_name}</a>"
+    grading_legend:
+      title: สัญลักษณ์ในการตรวจ
+      symbol: สัญลักษณ์
+      meaning: ความหมาย
+      p: คำตอบถูกต้อง
+      wrong: คำตอบผิด
+      s: ข้าม (ได้คะแนนจากชุดอื่นในกลุ่มเดียวกันครบแล้ว)
+      t: ใช้เวลาเกินกำหนด (Time Limit)
+      m: ใช้หน่วยความจำเกินกำหนด (Memory Limit)
+      x: โปรแกรมทำงานผิดพลาด (Crashed)
+      group_info: "[ ... ] หมายถึงชุดทดสอบที่อยู่ในกลุ่มเดียวกัน"
 
   activerecord:
     attributes:
       user:
         login: "ชื่อเข้าใช้ระบบ"
         full_name: "ชื่อเต็ม"
-        email: "e-mail"
-        province: "จังหวัด"
+      evaluation:
+        results:
+          waiting: กำลังตรวจ
+          correct: ถูกต้อง
+          wrong: คำตอบผิด
+          partial: ถูกบางส่วน
+          time_limit: เกินเวลาที่กำหนด
+          memory_limit: เกินหน่วยความจำที่กำหนด
+          crash: โปรแกรมทำงานผิดพลาด
+          unknown_error: ข้อผิดพลาดไม่ทราบสาเหตุ
+          grader_error: ข้อผิดพลาดของเครื่องตรวจ
+          skipped: ข้าม
 

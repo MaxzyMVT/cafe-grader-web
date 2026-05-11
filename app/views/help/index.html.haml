@@ -1,0 +1,52 @@
+.container.py-5
+  .row.justify-content-center
+    .col-lg-10
+      .d-flex.align-items-center.gap-3.mb-5
+        .bg-primary.text-white.rounded-3.p-3.shadow-sm
+          %span.mi.md-36 help
+        %div
+          %h2.fw-bold.mb-0 User Guide & Help
+          %p.text-secondary.mb-0 Understanding the Cafe-Grader grading system
+
+      .row.g-4
+        .col-md-7
+          .card.border-0.shadow-sm.h-100
+            .card-body.p-4
+              %h5.fw-bold.mb-4.d-flex.align-items-center.gap-2
+                %span.mi.text-primary tips_and_updates
+                How to Submit
+              
+              .space-y-4
+                %section.mb-4
+                  %h6.fw-bold 1. Header Information
+                  %p.text-muted
+                    You 
+                    %span.text-dark.fw-semibold must 
+                    specify the language in your source code header. For example:
+                  .bg-surface-alt.p-3.rounded-3.mb-3
+                    %pre.mb-0.small
+                      %code
+                        :preserve
+                          /*
+                          LANG: C++
+                          TASK: taskname
+                          */
+                
+                %section.mb-4
+                  %h6.fw-bold 2. Supported Languages
+                  .d-flex.flex-wrap.gap-2
+                    - ['C', 'C++', 'Python', 'Java', 'Rust', 'Go'].each do |lang|
+                      %span.badge.bg-primary-subtle.text-primary.border.border-primary-subtle= lang
+
+        .col-md-5
+          = render 'main/grading_legend'
+
+      .card.border-0.shadow-sm.mt-4
+        .card-body.p-4
+          %h5.fw-bold.mb-4.d-flex.align-items-center.gap-2
+            %span.mi.text-primary contact_support
+            Need More Help?
+          %p.mb-0
+            If you have any questions or encounter issues, please use the 
+            = link_to 'Messages', messages_path, class: 'fw-bold text-decoration-none'
+            system to contact the staff.

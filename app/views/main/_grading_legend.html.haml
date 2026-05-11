@@ -1,0 +1,49 @@
+.card.card-shadow.border-0.bg-surface-alt.mt-4
+  .card-body.p-4
+    %h6.fw-bold.text-uppercase.text-secondary.mb-4.d-flex.align-items-center.gap-2
+      %span.mi info
+      = t 'help.grading_legend.title'
+    
+    .row.g-4
+      .col-md-6
+        %table.table.table-sm.table-borderless.mb-0
+          %tbody
+            %tr
+              %td.p-2.text-center{style: 'width: 3rem;'}
+                %span.badge.bg-success.rounded-pill.px-3 P
+              %td.p-2.align-middle
+                %span.fw-semibold= t 'help.grading_legend.p'
+            %tr
+              %td.p-2.text-center
+                %span.badge.bg-danger.rounded-pill.px-3 -
+              %td.p-2.align-middle
+                %span.fw-semibold= t 'help.grading_legend.wrong'
+            %tr
+              %td.p-2.text-center
+                %span.badge.bg-secondary.rounded-pill.px-3 S
+              %td.p-2.align-middle
+                %span.fw-semibold= t 'help.grading_legend.s'
+      
+      .col-md-6
+        %table.table.table-sm.table-borderless.mb-0
+          %tbody
+            %tr
+              %td.p-2.text-center{style: 'width: 3rem;'}
+                %span.badge.bg-warning.text-dark.rounded-pill.px-3 T
+              %td.p-2.align-middle
+                %span.fw-semibold= t 'help.grading_legend.t'
+            %tr
+              %td.p-2.text-center
+                %span.badge.bg-warning.text-dark.rounded-pill.px-3 M
+              %td.p-2.align-middle
+                %span.fw-semibold= t 'help.grading_legend.m'
+            %tr
+              %td.p-2.text-center
+                %span.badge.bg-danger.rounded-pill.px-3 X
+              %td.p-2.align-middle
+                %span.fw-semibold= t 'help.grading_legend.x'
+    
+    .mt-4.pt-3.border-top
+      %p.text-muted.small.mb-0.d-flex.align-items-center.gap-2
+        %span.mi.md-18 groups
+        = t 'help.grading_legend.group_info'

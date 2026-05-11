@@ -113,7 +113,7 @@ class Scorer
     result = ''
 
     # gen group info
-    evs = sorted_evaluation.select(:group, :group_name, :result, :testcase_id).map { |r| r.attributes.symbolize_keys }
+    evs = sorted_evaluation.select(:group, :group_name, :result, :score, :testcase_id).map { |r| r.attributes.symbolize_keys }
     return '' if evs.empty?
     max_group = evs.max_by { |x| x[:group] || 0 }
     evs << {group: max_group[:group]+1, result: ''} # this is sentinel
@@ -121,10 +121,11 @@ class Scorer
     last_group = max_group[:group]+2 # some group number that is not in the data and not sentinel
     group_result = ''
     current_group_count = 0
+    group_is_full = false
+
     # build the string
     evs.each do |ev|
       group = ev[:group]
-      result_code = Evaluation.result_enum_to_code(ev[:result])
 
       # process end of group
       if last_group != group
@@ -141,6 +142,21 @@ class Scorer
         # reset group tally
         group_result = ''
         current_group_count = 0
+        group_is_full = false
+      end
+
+      # stop if sentinel
+      break if group == max_group[:group]+1
+
+      result_code = Evaluation.result_enum_to_code(ev[:result])
+      
+      # Logic for 'S' (Skipped) in GROUP MAX
+      if @working_dataset.st_group_max?
+        if group_is_full && ev[:result] != 'correct'
+          result_code = 'S'
+        elsif ev[:result] == 'correct'
+          group_is_full = true
+        end
       end
 
       group_result += result_code
