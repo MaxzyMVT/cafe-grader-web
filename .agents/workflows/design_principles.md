@@ -1,3 +1,7 @@
+---
+description: Learn project front-end styling by reading style files
+---
+
 # Design Principles
 
 ## Goal
