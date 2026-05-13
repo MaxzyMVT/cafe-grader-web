@@ -12,6 +12,10 @@
   %span.badge.rounded-pill.d-inline-flex.align-items-center.gap-1.ms-1{class: (limit_reached ? 'badge-limit-danger' : 'badge-limit-info'), 'data-bs-toggle' => 'tooltip', title: (limit_reached ? 'Submission limit reached' : "#{remaining} submission#{'s' unless remaining == 1} remaining")}
     %span.mi{style: 'font-size: 0.85rem;'} upload
     = "#{sub_count}/#{problem.max_submissions} subs"
+- if problem.bonus_first_blood.to_f > 0
+  %span.badge.rounded-pill.bg-danger-subtle.text-danger.d-inline-flex.align-items-center.gap-1.ms-1{title: 'First Blood Bonus'}
+    %span.mi{style: 'font-size: 0.85rem;'} bloodtype
+    = "+#{problem.bonus_first_blood.to_i}"
 
 -# link for download statement, attachment, testcases
 %div.d-inline-flex.align-items-center.align-middle.gap-1

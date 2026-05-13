@@ -25,11 +25,16 @@
                   %th.text-center{style: "min-width: 60px;"} Rank
                   %th{style: "min-width: 200px;"} Name
                   %th.text-center{style: "min-width: 80px;"} Sum
+                  %th.text-center{style: "min-width: 80px;"} Bonus
                   %th.text-center{style: "min-width: 80px;"} Deducted
                   - @problems.each do |p|
                     %th.text-center.problem-header{title: p.full_name}
                       .vertical-text.mx-auto= p.name
                       .small.text-muted= p.full_score || 100
+                      - if p.bonus_first_blood.to_f > 0
+                        .badge.bg-danger-subtle.text-danger.p-1.mt-1{title: "First Blood Bonus: #{p.bonus_first_blood}"}
+                          %span.mi.md-12 bloodtype
+                          %span.fw-bold.small= "+#{p.bonus_first_blood.to_i}"
               
               %tbody
                 - if @mode == 'individual'
@@ -38,6 +43,7 @@
                       %td.text-center.fw-bold= entry[:rank]
                       %td= entry[:user].full_name
                       %td.text-center.fw-bold= entry[:total_score].to_i
+                      %td.text-center.text-success= entry[:bonus_score].to_i if entry[:bonus_score] > 0
                       %td.text-center.text-danger= entry[:deducted_score].to_i if entry[:deducted_score] > 0
                       - @problems.each do |p|
                         - score = @scores[entry[:user].id][p.id] || 0
@@ -45,13 +51,17 @@
                         - pct = (full_score > 0) ? (score / full_score.to_f).clamp(0, 1) : 0
                         %td.text-center.score-cell{style: "background-color: color-mix(in srgb, var(--color-success-bg) #{pct * 100}%, transparent);"}
                           - if score > 0
-                            = score.to_i
+                            %div.d-flex.align-items-center.justify-content-center.gap-1
+                              = score.to_i
+                              - if @first_blood_users[p.id] == entry[:user].id
+                                %span.mi.text-danger.md-12{title: 'First Blood!'} bloodtype
                 - else
                   - @leaderboard.each do |entry|
                     %tr.table-secondary
                       %td.text-center.fw-bold= entry[:rank]
                       %td.fw-bold= entry[:group].name
                       %td.text-center.fw-bold= entry[:total_score].to_i
+                      %td.text-center.text-success.fw-bold= entry[:bonus_score].to_i if entry[:bonus_score] > 0
                       %td.text-center.text-danger= entry[:deducted_score].to_i if entry[:deducted_score] > 0
                       %td{colspan: @problems.size}
                     - entry[:members].each do |m|
@@ -61,6 +71,7 @@
                           %i.mi.mi-subdirectory-arrow-right.text-muted.me-2
                           = m[:user].full_name
                         %td.text-center= m[:total_score].to_i
+                        %td.text-center.text-success= m[:bonus_score].to_i if m[:bonus_score] > 0
                         %td.text-center.text-danger= m[:deducted_score].to_i if m[:deducted_score] > 0
                         - @problems.each do |p|
                           - score = @scores[m[:user].id][p.id] || 0
@@ -68,7 +79,10 @@
                           - pct = (full_score > 0) ? (score / full_score.to_f).clamp(0, 1) : 0
                           %td.text-center.score-cell{style: "background-color: color-mix(in srgb, var(--color-success-bg) #{pct * 100}%, transparent);"}
                             - if score > 0
-                              = score.to_i
+                              %div.d-flex.align-items-center.justify-content-center.gap-1
+                                = score.to_i
+                                - if @first_blood_users[p.id] == m[:user].id
+                                  %span.mi.text-danger.md-12{title: 'First Blood!'} bloodtype
 
 :css
   .scoreboard-table .vertical-text {
