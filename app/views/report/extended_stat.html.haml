@@ -43,7 +43,7 @@
                     - if params[:group_mode] == '1'
                       = link_to (@most_effort_groups[id]&.name || "Group ##{id}"), '#', class: 'text-decoration-none'
                     - else
-                      = link_to (@most_effort_users[id]&.full_name || "User ##{id}"), stat_user_admin_path(id), class: 'text-decoration-none'
+                      = link_to (@most_effort_users[id]&.full_name || "User ##{id}"), stat_user_admin_path(id), class: 'text-decoration-none', target: '_blank', data: { turbo: false }
                   %span.badge.bg-primary.rounded-pill= count
 
       .col-md-6.col-lg-4
@@ -60,7 +60,7 @@
                     - if params[:group_mode] == '1'
                       = link_to (@first_bloods_groups[id]&.name || "Group ##{id}"), '#', class: 'text-decoration-none'
                     - else
-                      = link_to (@first_bloods_users[id]&.full_name || "User ##{id}"), stat_user_admin_path(id), class: 'text-decoration-none'
+                      = link_to (@first_bloods_users[id]&.full_name || "User ##{id}"), stat_user_admin_path(id), class: 'text-decoration-none', target: '_blank', data: { turbo: false }
                   %span.badge.bg-success.rounded-pill= count
 
       .col-md-6.col-lg-4
@@ -78,7 +78,7 @@
                       - if params[:group_mode] == '1'
                         = link_to (@score_growth_groups[id]&.name || "Group ##{id}"), '#', class: 'text-decoration-none'
                       - else
-                        = link_to (@score_growth_users[id]&.full_name || "User ##{id}"), stat_user_admin_path(id), class: 'text-decoration-none'
+                        = link_to (@score_growth_users[id]&.full_name || "User ##{id}"), stat_user_admin_path(id), class: 'text-decoration-none', target: '_blank', data: { turbo: false }
                     %span.badge.bg-info.rounded-pill= "+#{growth.to_i}"
             - else
               .p-4.text-center.text-muted Please select 'Since' and 'Until' dates to view score growth.
@@ -97,7 +97,7 @@
                     - if params[:group_mode] == '1'
                       = link_to (Group.find_by(id: id)&.name || "Group ##{id}"), '#', class: 'text-decoration-none'
                     - else
-                      = link_to (User.find_by(id: id)&.full_name || "User ##{id}"), stat_user_admin_path(id), class: 'text-decoration-none'
+                      = link_to (User.find_by(id: id)&.full_name || "User ##{id}"), stat_user_admin_path(id), class: 'text-decoration-none', target: '_blank', data: { turbo: false }
                   %span.text-muted.small.flex-shrink-0= "(#{data[:solved]} solved) #{number_with_delimiter(data[:value])} bytes"
 
       .col-md-6.col-lg-4
@@ -114,7 +114,7 @@
                     - if params[:group_mode] == '1'
                       = link_to (Group.find_by(id: id)&.name || "Group ##{id}"), '#', class: 'text-decoration-none'
                     - else
-                      = link_to (User.find_by(id: id)&.full_name || "User ##{id}"), stat_user_admin_path(id), class: 'text-decoration-none'
+                      = link_to (User.find_by(id: id)&.full_name || "User ##{id}"), stat_user_admin_path(id), class: 'text-decoration-none', target: '_blank', data: { turbo: false }
                   %span.text-muted.small.flex-shrink-0= "(#{data[:solved]} solved) #{data[:value].round(3)}s"
 
       .col-md-6.col-lg-4
@@ -131,7 +131,7 @@
                     - if params[:group_mode] == '1'
                       = link_to (Group.find_by(id: id)&.name || "Group ##{id}"), '#', class: 'text-decoration-none'
                     - else
-                      = link_to (User.find_by(id: id)&.full_name || "User ##{id}"), stat_user_admin_path(id), class: 'text-decoration-none'
+                      = link_to (User.find_by(id: id)&.full_name || "User ##{id}"), stat_user_admin_path(id), class: 'text-decoration-none', target: '_blank', data: { turbo: false }
                   %span.text-muted.small.flex-shrink-0= "(#{data[:solved]} solved) #{number_with_delimiter(data[:value])} KB"
 
     .row.mt-4
@@ -152,10 +152,10 @@
                 %tbody
                   - @latest_passed.each do |sub|
                     %tr
-                      %td= link_to sub.user&.full_name, stat_user_admin_path(sub.user_id), class: 'text-decoration-none'
+                      %td= link_to sub.user&.full_name, stat_user_admin_path(sub.user_id), class: 'text-decoration-none', target: '_blank', data: { turbo: false }
                       %td= sub.problem&.name
                       %td= sub.language&.pretty_name
-                      %td= link_to (time_ago_in_words(sub.submitted_at) + " ago"), submission_path(sub), class: 'text-decoration-none text-muted'
+                      %td= link_to (time_ago_in_words(sub.submitted_at) + " ago"), submission_path(sub), class: 'text-decoration-none text-muted', target: '_blank', data: { turbo: false }
                       
       .col-md-6
         .card.card-shadow.h-100
@@ -174,15 +174,15 @@
                 %tbody
                   - @latest_sub.each do |sub|
                     %tr
-                      %td= link_to sub.user&.full_name, stat_user_admin_path(sub.user_id), class: 'text-decoration-none'
+                      %td= link_to sub.user&.full_name, stat_user_admin_path(sub.user_id), class: 'text-decoration-none', target: '_blank', data: { turbo: false }
                       %td= sub.problem&.name
                       %td
                         - if sub.points.nil?
                           %span.badge.bg-secondary Processing
                         - elsif sub.points >= (sub.problem&.full_score || 100)
-                          = link_to submission_path(sub), class: 'text-decoration-none' do
+                          = link_to submission_path(sub), class: 'text-decoration-none', target: '_blank', data: { turbo: false } do
                             %span.badge.bg-success= sub.points.to_i
                         - else
-                          = link_to submission_path(sub), class: 'text-decoration-none' do
+                          = link_to submission_path(sub), class: 'text-decoration-none', target: '_blank', data: { turbo: false } do
                             %span.badge.bg-warning.text-dark= sub.points.to_i
-                      %td= link_to (time_ago_in_words(sub.submitted_at) + " ago"), submission_path(sub), class: 'text-decoration-none text-muted'
+                      %td= link_to (time_ago_in_words(sub.submitted_at) + " ago"), submission_path(sub), class: 'text-decoration-none text-muted', target: '_blank', data: { turbo: false }
