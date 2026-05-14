@@ -95,11 +95,18 @@ class Checker
   # check if required files, that are, output from submttion, answer from problem
   # and any other file is there
   def check_for_required_file
-    raise "Output file [#{@output_file.cleanpath}] does not exists" unless @output_file.exist?
-    raise "Answer file [#{@ans_file.cleanpath}] does not exists" unless @ans_file.exist?
+    unless @output_file.exist?
+      judge_log "Output file [#{@output_file.cleanpath}] does not exist", Logger::ERROR
+      raise "Output file [#{@output_file.cleanpath}] does not exist"
+    end
+    unless @ans_file.exist?
+      judge_log "Answer file [#{@ans_file.cleanpath}] does not exist", Logger::ERROR
+      raise "Answer file [#{@ans_file.cleanpath}] does not exist"
+    end
     if ['custom_cms', 'custom_cms_raw', 'custom_cafe'].include?(@ds.evaluation_type) &&
         (@prob_checker_file.nil? || @prob_checker_file.exist? == false)
-      raise GraderError.new("Checker file does not exists", submission_id: @sub.id)
+      judge_log "Checker file does not exist", Logger::ERROR
+      raise GraderError.new("Checker file does not exist", submission_id: @sub.id)
     end
   end
 

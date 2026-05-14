@@ -70,6 +70,14 @@ class Evaluator
                                   time_limit: @working_dataset.time_limit, mem_limit: @working_dataset.memory_limit,
                                   cg: need_cg)
 
+    # check if isolate itself failed
+    unless status.success?
+      judge_log "ISOLATE failed to execute: #{err}", Logger::ERROR
+      e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase)
+      e.update(result: :grader_error, isolate_message: "Sandbox failed: #{err.truncate(100)}")
+      return EngineResponse::Result.failure(error: "Sandbox execution failed")
+    end
+
     # also run isolate to chmod the outputfile
     run_isolate('/usr/bin/chmod 0666 '+@isolate_stdout_file.to_s, output: output, meta: nil, cg: need_cg)
 
@@ -95,18 +103,20 @@ class Evaluator
     # any error?
     unless meta['status'].blank?
       judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} forced exit by isolate (#{Rainbow(meta['status']).color(COLOR_EVALUATION_FORCE_EXIT)}) #{Rainbow(err).color(COLOR_EVALUATION_FORCE_EXIT)} "
-      time = meta['time'] || meta['time-wall'] || 0
+      time = meta['time'] || meta['time-wall'] || 0.to_d
+      max_rss = meta['max-rss'] || 0
       if meta['status'] == 'SG'
-        e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :crash)
+        e.update(time: time * 1000, memory: max_rss, isolate_message: meta['message'], result: :crash)
       elsif meta['status'] == 'TO'
-        e.update(time: meta['time-wall'] * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :time_limit)
+        wall_time = meta['time-wall'] || time
+        e.update(time: wall_time * 1000, memory: max_rss, isolate_message: meta['message'], result: :time_limit)
       elsif meta['status'] == 'RE'
-        e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :crash)
+        e.update(time: time * 1000, memory: max_rss, isolate_message: meta['message'], result: :crash)
       elsif meta['status'] == 'XX'
         e.update(isolate_message: meta['message'], result: :grader_error)
       else
         # other status
-        e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :unknown_error)
+        e.update(time: time * 1000, memory: max_rss, isolate_message: meta['message'], result: :unknown_error)
       end
     else
       judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} ends normally"
@@ -115,7 +125,9 @@ class Evaluator
       check_result = checker.process(@sub, @testcase)
 
       normalized_score = normalize_score_for_storage(check_result[:score])
-      e.update(time: meta['time'] * 1000, memory: meta['max-rss'],
+      time = meta['time'] || 0.to_d
+      max_rss = meta['max-rss'] || 0
+      e.update(time: time * 1000, memory: max_rss,
                 result: check_result[:result], score: normalized_score,
                 result_text: (check_result[:comment] || '').truncate(250))
     end

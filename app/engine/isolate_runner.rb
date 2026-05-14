@@ -48,10 +48,14 @@ module IsolateRunner
   # load the filename and parse it
   # return a hash
   def parse_meta(filename)
+    result = { 'time' => 0.to_d, 'time-wall' => 0.to_d, 'max-rss' => 0, 'status' => 'XX', 'message' => 'Internal error: meta file missing' }
+    return result unless filename && File.exist?(filename)
+
+    # if file exists, we start with empty hash and fill it
     result = Hash.new
-    return result unless filename
     File.open(filename, 'r').each do |line|
       a, b = line.split(':')
+      next unless a && b
       case a
       when 'exitcode'
         result[a] = b.to_i
