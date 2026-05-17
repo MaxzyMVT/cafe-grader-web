@@ -74,7 +74,7 @@
                 %li= link_to 'Languages', languages_path, class: 'dropdown-item'+active_class_when(controller: :languages) if @current_user.admin?
                 -#
           / report
-          - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:report).any?)
+          - if @current_user && (@current_user.admin? || (@current_user.groups_for_action(:report).any? && !@current_user.problem_setter?))
             %li.nav-item.dropdown.mx-2
               %a.nav-link.dropdown-toggle.active-with-children{href: '#', data: {bs: {toggle:'dropdown'}},  aria: {haspopup:"true", expanded:"false"}, role: "button"}
                 Report
