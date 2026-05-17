@@ -42,13 +42,7 @@ class GradersController < ApplicationController
   def set_enabled
     @grader.update(enabled: params[:enabled])
 
-    if @grader.worker_id == Rails.configuration.worker[:worker_id]
-      begin
-        Grader.watchdog
-      rescue => e
-        logger.error "Watchdog failed to run immediately: #{e.message}"
-      end
-    end
+
 
     # render partial: 'grader', locals: {grader: @grader}
     render turbo_stream: turbo_stream.replace(helpers.dom_id(@grader), partial: 'grader', locals: {grader: @grader})
