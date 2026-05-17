@@ -1,4 +1,9 @@
 %tr
+  - if @current_user.admin? || @current_user.problem_setter?
+    %td
+      = submission.user.login
+      %br
+      %small.text-muted= submission.user.full_name
   %td{:align => "center"}
     = submission.number
   %td.text-right

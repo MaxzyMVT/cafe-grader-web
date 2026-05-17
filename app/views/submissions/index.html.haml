@@ -8,6 +8,8 @@
   - if @submissions.length>0
     %table.table
       %thead
+        - if @current_user.admin? || @current_user.problem_setter?
+          %th User
         %th No.
         %th.text-right #
         %th At
