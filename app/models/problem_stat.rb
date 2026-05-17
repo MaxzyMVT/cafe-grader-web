@@ -4,7 +4,18 @@ class ProblemStat < ApplicationRecord
   # Recompute stats for all problems in a single aggregate query,
   # then upsert into problem_stats.
   def self.recompute_all
-    rows = Problem.joins("LEFT JOIN submissions ON submissions.problem_id = problems.id")
+    exclude_ids = User.joins(:roles).where(roles: { name: ['admin', 'problem_setter'] }).pluck(:id)
+    exclude_ids += User.where(enabled: false).pluck(:id)
+    exclude_ids += User.joins(:groups).where(groups: { enabled: false }).pluck(:id)
+    exclude_ids = exclude_ids.uniq
+
+    sql_cond = if exclude_ids.any?
+                 "AND submissions.user_id NOT IN (#{exclude_ids.join(',')})"
+               else
+                 ""
+               end
+
+    rows = Problem.joins("LEFT JOIN submissions ON submissions.problem_id = problems.id #{sql_cond}")
       .group("problems.id")
       .pluck(
         Arel.sql("problems.id"),
