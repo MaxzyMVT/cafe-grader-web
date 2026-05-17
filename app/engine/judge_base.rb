@@ -261,7 +261,35 @@ module JudgeBase
     # we always prepare manager
     WorkerDataset.transaction do
       wp = WorkerDataset.lock("FOR UPDATE").find_or_create_by(worker_id: @worker_id, dataset_id: dataset.id)
-      if wp.managers_status == 'created'
+      
+      # Verify that manager files actually exist on disk
+      managers_exist = true
+      if wp.managers_status == 'ready'
+        if dataset.checker.attached? && !@prob_checker_file.exist?
+          managers_exist = false
+        end
+        dataset.managers.each do |mng|
+          basename = mng.filename.base + mng.filename.extension_with_delimiter
+          dest = @manager_path + basename
+          managers_exist = false unless dest.exist?
+        end
+        dataset.initializers.each do |init|
+          basename = init.filename.base + init.filename.extension_with_delimiter
+          dest = @prob_init_path + basename
+          managers_exist = false unless dest.exist?
+        end
+        dataset.data_files.each do |data_file|
+          basename = data_file.filename.base + data_file.filename.extension_with_delimiter
+          dest = @prob_data_path + basename
+          managers_exist = false unless dest.exist?
+        end
+      end
+
+      if wp.managers_status == 'ready' && !managers_exist
+        judge_log("Managers marked as ready in DB, but files are missing on disk. Redownloading...")
+      end
+
+      if wp.managers_status == 'created' || (wp.managers_status == 'ready' && !managers_exist)
         # no one is working on this worker problem, I will download
         wp.update(managers_status: :downloading)
 
@@ -279,7 +307,24 @@ module JudgeBase
     if type == :all
       WorkerDataset.transaction do
         wp = WorkerDataset.lock("FOR UPDATE").find_or_create_by(worker_id: @worker_id, dataset_id: dataset.id)
-        if wp.testcases_status == 'created'
+        
+        # Verify that testcase files actually exist on disk
+        testcases_exist = true
+        if wp.testcases_status == 'ready'
+          dataset.testcases.each do |tc|
+            prepare_testcase_directory(nil, tc)
+            unless @input_file.exist? && @ans_file.exist?
+              testcases_exist = false
+              break
+            end
+          end
+        end
+
+        if wp.testcases_status == 'ready' && !testcases_exist
+          judge_log("Testcases marked as ready in DB, but files are missing on disk. Redownloading...")
+        end
+
+        if wp.testcases_status == 'created' || (wp.testcases_status == 'ready' && !testcases_exist)
           # no one is working on this worker problem, I will download
           wp.update(testcases_status: :downloading)
 

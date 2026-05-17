@@ -145,6 +145,11 @@ class Evaluator
     @sub.compiled_files.each do |attachment|
       filename = @mybin_path + attachment.filename.to_s
 
+      if filename.exist?
+        judge_log "Using already downloaded executable #{attachment.filename}"
+        next
+      end
+
       # download from server
       url = Rails.configuration.worker[:hosts][:web]+worker_get_compiled_submission_path(@sub, attachment.id)
       begin
