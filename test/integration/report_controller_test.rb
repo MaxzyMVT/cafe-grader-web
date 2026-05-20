@@ -85,4 +85,66 @@ class ReportControllerTest < ActionDispatch::IntegrationTest
     post "/report/login_detail_query", params: { user_id: users(:john).id }, as: :json
     assert_response :success
   end
+
+  test "admin can access extended_stat report" do
+    sign_in_as("admin", "admin")
+    get "/report/extended_stat"
+    assert_response :success
+  end
+
+  test "admin can access extended_stat report with time filter" do
+    sign_in_as("admin", "admin")
+    get "/report/extended_stat", params: { since_datetime: "2026-05-19 00:00", until_datetime: "2026-05-20 23:59" }
+    assert_response :success
+  end
+
+  test "extended_stat calculates first blood dynamically for enabled users" do
+    john = users(:john)
+    james = users(:james)
+    prob = problems(:prob_add)
+
+    # Enable both users
+    john.update!(enabled: true)
+    james.update!(enabled: true)
+
+    # Delete existing submissions for clean state
+    Submission.delete_all
+
+    # Sub 1: John submits and gets 100 at 10:00 (earliest passing)
+    sub1 = Submission.create!(
+      user: john,
+      problem: prob,
+      points: 100,
+      submitted_at: Time.zone.parse("2026-05-20 10:00:00"),
+      language: languages(:Language_c),
+      number: 1
+    )
+
+    # Sub 2: James submits and gets 100 at 10:05 (later passing)
+    sub2 = Submission.create!(
+      user: james,
+      problem: prob,
+      points: 100,
+      submitted_at: Time.zone.parse("2026-05-20 10:05:00"),
+      language: languages(:Language_c),
+      number: 1
+    )
+
+    sign_in_as("admin", "admin")
+
+    # 1. When both are enabled:
+    # First blood should go to John (sub1)
+    get "/report/extended_stat"
+    assert_response :success
+    assert_select ".bg-success + .card-body a[href=?]", stat_user_admin_path(john.id)
+    assert_select ".bg-success + .card-body a[href=?]", stat_user_admin_path(james.id), count: 0
+
+    # 2. When John is disabled:
+    # First blood should dynamically pass to James (sub2)
+    john.update!(enabled: false)
+    get "/report/extended_stat"
+    assert_response :success
+    assert_select ".bg-success + .card-body a[href=?]", stat_user_admin_path(john.id), count: 0
+    assert_select ".bg-success + .card-body a[href=?]", stat_user_admin_path(james.id)
+  end
 end

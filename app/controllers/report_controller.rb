@@ -313,23 +313,17 @@ class ReportController < ApplicationController
     # 3. Latest Submission
     @latest_sub = subs_scope.order(submitted_at: :desc).limit(10).includes(:user, :problem, :language)
 
-    # 4. First Bloods (N-th Bloods)
-    # Submissions that were the first N to get >= full_score for a problem
+    # 4. First Bloods
+    # Submissions that were the first to get >= full_score for each problem
     blood_sub_ids = []
     problems_to_check = Problem.where(id: selected_prob_ids)
     problems_to_check.each do |p|
-      n = p.respond_to?(:first_n_bloods) ? p.first_n_bloods : 0
-      if n > 0
-        user_first_subs = p.submissions.tag_default.joins(:user)
-                           .where("submissions.points >= ?", p.full_score || 100)
-                           .where.not(user_id: exclude_user_ids.uniq)
-                           .group(:user_id)
-                           .select('MIN(submissions.id) as first_sub_id, MIN(submissions.submitted_at) as first_time')
-                           .order('first_time ASC')
-                           .limit(n)
-                           .map(&:first_sub_id)
-        blood_sub_ids.concat(user_first_subs)
-      end
+      first_sub = p.submissions.tag_default
+                    .where("submissions.points >= ?", p.full_score || 100)
+                    .where.not(user_id: exclude_user_ids.uniq)
+                    .order(submitted_at: :asc, id: :asc)
+                    .first
+      blood_sub_ids << first_sub.id if first_sub
     end
     
     fb_base = passed_scope.where(id: blood_sub_ids)
@@ -445,8 +439,8 @@ class ReportController < ApplicationController
 
     # 8. Score Growth
     if @since_time && @until_time
-      since_scores = get_total_scores_at(@since_time, admin_ids, selected_prob_ids, params[:group_mode] == '1')
-      until_scores = get_total_scores_at(@until_time, admin_ids, selected_prob_ids, params[:group_mode] == '1')
+      since_scores = get_total_scores_at(@since_time, exclude_user_ids.uniq, selected_prob_ids, params[:group_mode] == '1')
+      until_scores = get_total_scores_at(@until_time, exclude_user_ids.uniq, selected_prob_ids, params[:group_mode] == '1')
 
       @score_growth = {}
       until_scores.each do |id, score|
