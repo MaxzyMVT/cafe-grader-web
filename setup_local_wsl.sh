@@ -1,93 +1,168 @@
 #!/bin/bash
 # Cafe-Grader Local Web Development Setup Script (WSL/Ubuntu)
-# This sets up the environment needed to run the web interface locally via `bin/dev`.
-# It does NOT install Apache or configure production remote databases.
+# Sets up the environment needed to run the web interface locally via `bin/dev`.
+# Does NOT install Apache, compilers, or configure production databases.
 #
-# IMPORTANT: Run this script from your existing cafe-grader-web project directory.
-# Do NOT clone a separate copy - use your local codebase.
+# IMPORTANT: Run this script from your cafe-grader-web project directory.
+# Do NOT clone a separate copy — use your local codebase.
+#
+# Usage: bash setup_local_wsl.sh
 
 set -e
 
-echo "Starting Local Web Environment Setup for WSL/Ubuntu..."
+RUBY_VERSION="3.4.4"
+DB_USER="grader_user"
+DB_PASS="grader_pass"
 
-# 1. System updates and packages
-echo "Installing system dependencies..."
+echo "============================================================"
+echo " Cafe-Grader Local Web Environment Setup (WSL/Ubuntu)"
+echo "============================================================"
+
+# ---------------------------------------------------------------
+# 1. System packages
+# ---------------------------------------------------------------
+echo "[1/7] Installing system dependencies..."
 sudo apt update
-sudo apt install -y mysql-server libmysqlclient-dev git curl unzip libpq-dev
+sudo apt install -y \
+  mysql-server libmysqlclient-dev \
+  git curl unzip libpq-dev \
+  libssl-dev libreadline-dev zlib1g-dev \
+  autoconf bison build-essential libyaml-dev \
+  libncurses5-dev libffi-dev libgdbm-dev \
+  openssl
 
-# 2. rbenv and Ruby
-echo "Installing rbenv and Ruby..."
-
-sudo apt install -y git curl libssl-dev libreadline-dev zlib1g-dev autoconf bison build-essential libyaml-dev libncurses5-dev libffi-dev libgdbm-dev
+# ---------------------------------------------------------------
+# 2. Ruby via rbenv
+# ---------------------------------------------------------------
+echo "[2/7] Installing rbenv and Ruby $RUBY_VERSION..."
 
 if [ ! -d "$HOME/.rbenv" ]; then
-    curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash
+  curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash
 fi
 
 export PATH="$HOME/.rbenv/bin:$PATH"
 eval "$(rbenv init -)"
 
 if ! grep -q 'rbenv init' ~/.bashrc; then
-    echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
-    echo 'eval "$(rbenv init -)"' >> ~/.bashrc
+  echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
+  echo 'eval "$(rbenv init -)"' >> ~/.bashrc
 fi
 
-echo "Installing Ruby 3.4.4..."
-if ! rbenv versions | grep -q 3.4.4; then
-    rbenv install 3.4.4
+if ! rbenv versions | grep -q "$RUBY_VERSION"; then
+  rbenv install "$RUBY_VERSION"
 fi
 
-rbenv global 3.4.4
-rbenv shell 3.4.4
+rbenv global "$RUBY_VERSION"
+rbenv shell "$RUBY_VERSION"
 
-# Install bundler
-gem install bundler
+# Remove stale system-level gem stubs that conflict with rbenv-managed Ruby.
+if [ -d "$HOME/.gem/ruby" ]; then
+  rm -rf "$HOME/.gem/ruby"
+fi
 
-# Verify we're using the correct Ruby
-echo "Ruby location: $(which ruby)"
-echo "Ruby version: $(ruby --version)"
+gem install bundler --no-document
+echo "  Ruby: $(ruby --version) at $(which ruby)"
 
-# 4. App Setup - Run from current directory (do not clone)
-echo "Setting up Cafe-Grader Web App..."
+# ---------------------------------------------------------------
+# 3. Move to project directory
+# ---------------------------------------------------------------
+echo "[3/7] Preparing project directory..."
 cd "$(dirname "$0")"
 
-# Fix Windows line endings (CRLF -> LF) on bin/* scripts
-echo "Fixing line endings on bin/* scripts..."
+# Fix Windows line endings (CRLF -> LF) on bin/* scripts — common WSL issue
+echo "  Fixing CRLF line endings on bin/* scripts..."
 sed -i 's/\r$//' bin/*
 
-# 5. Configuration Setup
-echo "Copying sample configuration files..."
-# This prevents the LoadError by ensuring application.rb exists
-for file in application.rb database.yml llm.yml worker.yml; do
-    if [ ! -f "config/$file" ]; then
-        echo "Creating config/$file from sample..."
-        cp "config/$file.SAMPLE" "config/$file"
-    fi
+# ---------------------------------------------------------------
+# 4. Initialise configuration files from samples
+# ---------------------------------------------------------------
+echo "[4/7] Copying and patching configuration files..."
+
+for file in application.rb llm.yml worker.yml; do
+  if [ ! -f "config/$file" ]; then
+    echo "  Creating config/$file from sample..."
+    cp "config/$file.SAMPLE" "config/$file"
+  else
+    echo "  config/$file already exists, skipping."
+  fi
 done
 
-echo "Installing Ruby Gems..."
+# Always regenerate and patch database.yml with local dev credentials.
+# SAMPLE defaults to  username: grader / password: grader  which will fail db:setup.
+cp config/database.yml.SAMPLE config/database.yml
+sed -i "s/username:.*/username: $DB_USER/" config/database.yml
+sed -i "s/password:.*/password: $DB_PASS/" config/database.yml
+sed -i "s/host:.*/host: localhost/"        config/database.yml
+echo "  database.yml patched with local credentials."
+
+# Patch worker.yml for local dev
+sed -i "s|web:.*|web: http://localhost:3000|" config/worker.yml
+echo "  worker.yml patched (web: http://localhost:3000)."
+
+# Silence Dart Sass @import deprecation warnings from Bootstrap.
+cat > config/initializers/dartsass_silence_deprecations.rb <<'RUBYEOF'
+Rails.application.config.dartsass.build_options \
+  << "--silence-deprecation=import" \
+  << "--silence-deprecation=global-builtin" \
+  << "--silence-deprecation=color-functions" \
+  << "--silence-deprecation=mixed-decls"
+RUBYEOF
+echo "  Dart Sass deprecation warnings silenced."
+
+# ---------------------------------------------------------------
+# 5. MySQL: start + create user
+# ---------------------------------------------------------------
+echo "[5/7] Starting MySQL and creating database user..."
+sudo service mysql start || sudo systemctl start mysql
+
+sudo mysql -u root -e "DROP USER IF EXISTS '$DB_USER'@'localhost';"
+sudo mysql -u root -e "CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';"
+sudo mysql -u root -e "GRANT ALL PRIVILEGES ON \`grader%\`.* TO '$DB_USER'@'localhost';"
+sudo mysql -u root -e "FLUSH PRIVILEGES;"
+echo "  MySQL user '$DB_USER' created."
+
+# ---------------------------------------------------------------
+# 6. Install gems + build CSS
+# ---------------------------------------------------------------
+echo "[6/7] Installing Ruby gems..."
 bundle install
 
-echo "Building CSS assets..."
+echo "  Building CSS assets..."
 bundle exec rails dartsass:build
 
-echo "Starting MySQL..."
-sudo service mysql start
+# ---------------------------------------------------------------
+# 7. Rails master key + database setup
+# ---------------------------------------------------------------
+echo "[7/7] Generating Rails master key and setting up database..."
 
-echo "--------------------------------------------------------"
-echo "Local Web Environment setup complete!"
-echo "Please perform the following manual steps:"
-echo "--------------------------------------------------------"
-echo "1. Create the MySQL user for the app (run this in your terminal):"
-echo "   sudo mysql -e \"DROP USER IF EXISTS 'grader'@'localhost'; CREATE USER 'grader'@'localhost' IDENTIFIED BY 'grader'; GRANT ALL PRIVILEGES ON \\\`grader%\\\`.* TO 'grader'@'localhost'; FLUSH PRIVILEGES;\""
+if [ ! -f config/master.key ]; then
+  cp config/credentials.yml.SAMPLE config/credentials.yml.enc
+  openssl rand -hex 32 > config/master.key
+  chmod 600 config/master.key
+  echo "  master.key generated."
+else
+  echo "  master.key already exists, skipping."
+fi
+
+bundle exec rails db:setup
+echo "  Database ready."
+
+# ---------------------------------------------------------------
+# Done
+# ---------------------------------------------------------------
 echo ""
-echo "2. Run: bundle exec rails credentials:edit"
-echo "   (If you get an error, set your editor first: export EDITOR=nano)"
+echo "============================================================"
+echo " Setup complete!"
+echo "============================================================"
 echo ""
-echo "3. Run the database setup:"
-echo "   bundle exec bin/rails db:setup"
-echo "   bundle exec bin/rails db:seed"
+echo "  Start the local development server:"
 echo ""
-echo "4. To start the local server, run: bin/dev"
+echo "    bin/dev"
+echo "    Then open http://localhost:3000"
 echo ""
-echo "NOTE: Always use 'bundle exec' before rails commands."
+echo "  Default login  ->  username: root   password: ioionrails"
+echo "  Change the password immediately after first login."
+echo ""
+echo "  NOTE: ioi/isolate cannot run on WSL2."
+echo "  Code submission grading requires a full Ubuntu VM or staging server."
+echo ""

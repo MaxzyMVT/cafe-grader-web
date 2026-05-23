@@ -31,6 +31,20 @@ WORKER_COUNT=$(( CPU_CORES > 2 ? CPU_CORES - 2 : 1 ))
 LINUX_USER="$USER"
 APP_DIR="$CAFE_DIR/web"
 
+# ---------------------------------------------------------------
+# Cloud compatibility helpers
+# ---------------------------------------------------------------
+ufw_allow_if_active() {
+  local port="$1"
+  if sudo ufw status 2>/dev/null | grep -q "^Status: active"; then
+    sudo ufw allow "${port}/tcp"
+    echo "  ufw: opened port $port/tcp."
+  else
+    echo "  ufw inactive — skipping ufw rule for port $port."
+    echo "  Cloud users: open port $port in your security group / firewall rules."
+  fi
+}
+
 echo "============================================================"
 echo " Cafe-Grader Worker Node Installation (Ubuntu 22.04+)"
 echo " Web/DB server IP: $WEB_DB_IP"
@@ -189,13 +203,22 @@ if [ -f /etc/default/grub ]; then
     sudo sed -i \
       's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 cgroup_enable=memory swapaccount=1"/' \
       /etc/default/grub
-    sudo update-grub
+    sudo sed -i \
+      's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 cgroup_enable=memory swapaccount=1"/' \
+      /etc/default/grub
+    if command -v update-grub &>/dev/null; then
+      sudo update-grub
+    elif command -v grub2-mkconfig &>/dev/null; then
+      sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+    else
+      sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
+    fi
     echo "  GRUB updated — takes effect after reboot."
   else
     echo "  cgroup_enable=memory already present, skipping."
   fi
 else
-  echo "  WARNING: /etc/default/grub not found — add cgroup_enable=memory manually."
+  echo "  WARNING: /etc/default/grub not found — cgroup_enable=memory must be set manually."
 fi
 
 # ---------------------------------------------------------------
@@ -243,19 +266,17 @@ fi
 # ---------------------------------------------------------------
 # 8. Rails master key + credentials (needed to boot Rails runner)
 # ---------------------------------------------------------------
-echo "[8/10] Generating Rails master key and credentials..."
-
-# Remove any stale/mismatched key+credentials pair. A mismatch causes:
-#   ActiveSupport::MessageEncryptor::InvalidMessage: missing separator
-# at db:migrate time because Rails decrypts credentials during environment
-# load (config/environment.rb:5). EDITOR=true runs non-interactively.
-rm -f config/master.key config/credentials.yml.enc
-
-EDITOR=true bundle exec rails credentials:edit
-chmod 600 config/master.key
-echo "  master.key and credentials.yml.enc generated (matched pair)."
-echo "  NOTE: This key is independent from Server 1's key — credentials"
-echo "  are not shared between servers, which is fine for worker nodes."
+echo "[8/10] Generating Rails master key..."
+if [ ! -f config/master.key ]; then
+  cp config/credentials.yml.SAMPLE config/credentials.yml.enc
+  openssl rand -hex 32 > config/master.key
+  chmod 600 config/master.key
+  echo "  master.key generated."
+  echo "  NOTE: This key is independent from Server 1's key — credentials"
+  echo "  are not shared between servers, which is fine for worker nodes."
+else
+  echo "  master.key already exists, skipping."
+fi
 
 # ---------------------------------------------------------------
 # 9. Grader workers + whenever crontab as systemd services
@@ -330,6 +351,16 @@ CRON_JOB="0 2 * * * find $CAFE_DIR/judge/isolate_submission/ -maxdepth 1 -mtime 
   ( crontab -l 2>/dev/null; echo "$CRON_JOB" ) | crontab -
 echo "  Cleanup cron job installed (runs daily at 02:00)."
 
+# Worker nodes need no inbound ports open (they initiate outbound connections
+# to the Web/DB server). Only open if ufw is active to avoid blocking outbound.
+# Remind cloud users that the security group needs no inbound rules for workers.
+if sudo ufw status 2>/dev/null | grep -q "^Status: active"; then
+  echo "  ufw is active — no inbound port rules needed for worker nodes."
+else
+  echo "  Cloud users: worker nodes need no inbound security group rules."
+  echo "  Ensure outbound TCP to $WEB_DB_IP:3306 is allowed."
+fi
+
 # ---------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------
@@ -347,4 +378,5 @@ echo "    - $WORKER_COUNT grader worker(s)   evaluate code submissions"
 echo "    - whenever crontab      runs Grader.watchdog every minute"
 echo ""
 echo "  Connecting to Web/DB server at: $WEB_DB_IP"
+echo "  Cloud users: ensure outbound TCP to $WEB_DB_IP:3306 is not blocked."
 echo ""

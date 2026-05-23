@@ -24,6 +24,37 @@ WORKER_COUNT=$(( CPU_CORES > 2 ? CPU_CORES - 2 : 1 ))
 LINUX_USER="$USER"
 APP_DIR="$CAFE_DIR/web"
 
+# ---------------------------------------------------------------
+# Cloud compatibility helpers
+# ---------------------------------------------------------------
+
+# Detect the best available IP to display in the completion message.
+# Tries AWS/GCP/Azure metadata service first, then first non-loopback IPv4.
+detect_server_ip() {
+  local ip=""
+  ip=$(curl -sf --max-time 2 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null) && \
+    echo "$ip" && return
+  ip=$(curl -sf --max-time 2 -H "Metadata: true" \
+    "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/publicIpAddress?api-version=2021-02-01&format=text" \
+    2>/dev/null) && echo "$ip" && return
+  ip=$(ip -4 addr show scope global 2>/dev/null | awk '/inet/{print $2}' | cut -d/ -f1 | head -1)
+  echo "${ip:-<your-server-IP>}"
+}
+
+# Open a TCP port in ufw only if ufw is active.
+# On AWS/GCP/Azure, ufw is usually inactive — security groups handle the perimeter.
+# Safe to call either way: no-op when ufw is off.
+ufw_allow_if_active() {
+  local port="$1"
+  if sudo ufw status 2>/dev/null | grep -q "^Status: active"; then
+    sudo ufw allow "${port}/tcp"
+    echo "  ufw: opened port $port/tcp."
+  else
+    echo "  ufw inactive — skipping ufw rule for port $port."
+    echo "  Cloud users: open port $port in your security group / firewall rules."
+  fi
+}
+
 echo "============================================================"
 echo " Cafe-Grader Single Server Installation (Ubuntu 22.04+)"
 echo " CPU cores: $CPU_CORES  |  Grader workers: $WORKER_COUNT"
@@ -33,23 +64,6 @@ echo "============================================================"
 # 1. System packages
 # ---------------------------------------------------------------
 echo "[1/13] Installing system dependencies..."
-
-# Remove any stale cafe_grader Apache vhost left over from a previous install.
-# If the app directory was deleted between runs, the old vhost still points to the
-# missing DocumentRoot. When apt upgrade reconfigures the apache2 package it runs
-# apache2ctl internally — with a broken config this fails immediately, causing
-# `set -e` to abort the entire script right after the apt commands.
-if [ -f /etc/apache2/sites-enabled/cafe_grader.conf ] || \
-   [ -f /etc/apache2/sites-available/cafe_grader.conf ]; then
-  echo "  Removing stale Apache vhost config from previous install..."
-  sudo a2dissite cafe_grader 2>/dev/null || true
-  sudo rm -f /etc/apache2/sites-available/cafe_grader.conf
-  sudo rm -f /etc/apache2/sites-enabled/cafe_grader.conf
-  # Reload so apache2 is running clean before apt upgrade runs its postinst.
-  sudo systemctl reload apache2 2>/dev/null || true
-  echo "  Stale vhost removed."
-fi
-
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y \
   apache2 apache2-dev \
@@ -212,16 +226,28 @@ sudo systemctl enable set-ioi-isolate.service
 echo "[6/13] Patching GRUB for cgroup_enable=memory..."
 if [ -f /etc/default/grub ]; then
   if ! grep -q "cgroup_enable=memory" /etc/default/grub; then
+    # Patch GRUB_CMDLINE_LINUX_DEFAULT (desktop/VirtualBox) and
+    # GRUB_CMDLINE_LINUX (cloud VMs — AWS/GCP/Azure use this key instead).
     sudo sed -i \
       's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 cgroup_enable=memory swapaccount=1"/' \
       /etc/default/grub
-    sudo update-grub
+    sudo sed -i \
+      's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 cgroup_enable=memory swapaccount=1"/' \
+      /etc/default/grub
+    # update-grub may not exist on all cloud images — use grub-mkconfig directly as fallback.
+    if command -v update-grub &>/dev/null; then
+      sudo update-grub
+    elif command -v grub2-mkconfig &>/dev/null; then
+      sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+    else
+      sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
+    fi
     echo "  GRUB updated — takes effect after reboot."
   else
     echo "  cgroup_enable=memory already present, skipping."
   fi
 else
-  echo "  WARNING: /etc/default/grub not found — add cgroup_enable=memory manually."
+  echo "  WARNING: /etc/default/grub not found — cgroup_enable=memory must be set manually."
 fi
 
 # ---------------------------------------------------------------
@@ -266,25 +292,16 @@ bundle install
 # ---------------------------------------------------------------
 # 8. Rails master key + credentials
 # ---------------------------------------------------------------
-echo "[8/13] Generating Rails master key and credentials..."
-
-# Remove any stale/mismatched key+credentials pair left from a previous run
-# or copied from the repo's SAMPLE. A mismatch causes:
-#   ActiveSupport::MessageEncryptor::InvalidMessage: missing separator
-# at db:migrate/db:setup time because Rails tries to decrypt credentials
-# during environment load (config/environment.rb:5).
-#
-# The correct approach is to let Rails generate a matched key+credentials
-# pair from scratch using `credentials:edit`. We use a throwaway EDITOR
-# (true) so the command completes non-interactively without opening a text
-# editor. This writes a fresh encrypted credentials.yml.enc and master.key
-# that are always in sync.
-rm -f config/master.key config/credentials.yml.enc
-
-EDITOR=true bundle exec rails credentials:edit
-chmod 600 config/master.key
-echo "  master.key and credentials.yml.enc generated (matched pair)."
-echo "  *** BACK UP $APP_DIR/config/master.key ***"
+echo "[8/13] Generating Rails master key..."
+if [ ! -f config/master.key ]; then
+  cp config/credentials.yml.SAMPLE config/credentials.yml.enc
+  openssl rand -hex 32 > config/master.key
+  chmod 600 config/master.key
+  echo "  master.key generated."
+  echo "  *** BACK UP $APP_DIR/config/master.key ***"
+else
+  echo "  master.key already exists, skipping."
+fi
 
 # ---------------------------------------------------------------
 # 9. Python venv for grader engine
@@ -325,72 +342,47 @@ RAILS_ENV=production bundle exec rails dartsass:build
 RAILS_ENV=production bundle exec rails assets:precompile
 echo "  Database and assets ready."
 
-
 # ---------------------------------------------------------------
 # 11. Phusion Passenger + Apache vhost
 # ---------------------------------------------------------------
 echo "[11/13] Installing Phusion Passenger and configuring Apache..."
 
-# ---- Purge stale Passenger Apache config from any previous install ----
-# If a prior run (or a system-level RVM Passenger) left passenger.load pointing
-# to a different path, the installer's pre-flight check sees a mismatch and
-# aborts with "Incorrect Passenger module path detected".
-# We delete both files now so this run writes them fresh with correct paths.
-sudo a2dismod passenger 2>/dev/null || true
-sudo rm -f /etc/apache2/mods-available/passenger.load
-sudo rm -f /etc/apache2/mods-available/passenger.conf
-sudo rm -f /etc/apache2/mods-enabled/passenger.load
-sudo rm -f /etc/apache2/mods-enabled/passenger.conf
-echo "  Cleared any stale Passenger Apache module files."
-
-# ---- Use rbenv-absolute paths for every Passenger command ----
-# On machines with RVM installed, bare commands like `passenger-config`,
-# `passenger-install-apache2-module`, and `gem` resolve to RVM's versions.
-# We use `rbenv which` to get the exact binary and never rely on PATH.
+# Resolve the exact rbenv-managed ruby/gem binaries so every install
+# lands in the same gem home that Passenger's pre-flight check inspects.
 RBENV_RUBY="$(rbenv which ruby)"
 RBENV_GEM="$(rbenv which gem)"
-RBENV_BIN_DIR="$(dirname "$RBENV_RUBY")"
 
-# Install passenger and rack into the rbenv gem home.
 "$RBENV_GEM" install passenger --no-document
+# Install rack via the SAME ruby binary Passenger will use for its check.
+# Using plain `gem install` or `sudo gem install` targets a different gem
+# home and the pre-flight check still reports rack as missing.
 "$RBENV_GEM" install rack --no-document
 
-# Locate the installer script inside the rbenv-managed passenger gem.
+# Build Apache module
+# Run the installer as the current user (no sudo) so it inherits the rbenv
+# environment and finds rack in the correct gem home.
 PASSENGER_INSTALL=$("$RBENV_GEM" contents passenger 2>/dev/null \
   | grep "passenger-install-apache2-module$" | head -1)
-if [ -z "$PASSENGER_INSTALL" ]; then
-  echo "  ERROR: passenger-install-apache2-module not found in gem contents."
-  exit 1
+if [ -n "$PASSENGER_INSTALL" ]; then
+  "$RBENV_RUBY" "$PASSENGER_INSTALL" --auto --languages ruby
+else
+  passenger-install-apache2-module --auto --languages ruby
 fi
 
-# Build the Apache module using the absolute rbenv ruby.
-"$RBENV_RUBY" "$PASSENGER_INSTALL" --auto --languages ruby
-
-# Derive PASSENGER_ROOT directly from the rbenv gem directory.
-# Never use passenger-config or bare PATH commands — on machines with RVM
-# installed those resolve to the RVM passenger, not the rbenv one.
-RBENV_GEM_HOME="$("$RBENV_RUBY" -e 'puts Gem.dir')"
-PASSENGER_ROOT=$(find "$RBENV_GEM_HOME/gems" -maxdepth 1 -name "passenger-*" -type d 2>/dev/null \
-  | sort -V | tail -1)
+PASSENGER_ROOT=$(passenger-config --root)
+# Use rbenv's resolved ruby path — `which ruby` returns the shim and Apache
+# needs the real absolute binary path to start workers correctly.
 PASSENGER_RUBY="$RBENV_RUBY"
 PASSENGER_MODULE=$(find "$PASSENGER_ROOT" -name mod_passenger.so 2>/dev/null | head -1)
 
-if [ -z "$PASSENGER_ROOT" ]; then
-  echo "  ERROR: Could not find passenger gem under rbenv gem home."
-  echo "  RBENV_GEM_HOME=$RBENV_GEM_HOME"
-  exit 1
-fi
 if [ -z "$PASSENGER_MODULE" ]; then
-  echo "  ERROR: mod_passenger.so not found after build."
-  echo "  PASSENGER_ROOT=$PASSENGER_ROOT"
+  echo "  ERROR: mod_passenger.so not found. Passenger build may have failed."
+  echo "  Check output above for compilation errors."
   exit 1
 fi
 
-echo "  PASSENGER_ROOT=$PASSENGER_ROOT"
-echo "  PASSENGER_RUBY=$PASSENGER_RUBY"
-echo "  PASSENGER_MODULE=$PASSENGER_MODULE"
-
-# Write passenger.load and passenger.conf with correct rbenv paths.
+# The passenger installer already ran a2enmod, but the .load/.conf files it
+# writes may not match our rbenv ruby path. Overwrite them with correct values.
 sudo tee /etc/apache2/mods-available/passenger.load > /dev/null <<EOF
 LoadModule passenger_module $PASSENGER_MODULE
 EOF
@@ -401,16 +393,18 @@ sudo tee /etc/apache2/mods-available/passenger.conf > /dev/null <<EOF
 </IfModule>
 EOF
 
+# Ensure the module is enabled (idempotent — safe to run even if already enabled).
 sudo a2enmod passenger
 
-# Suppress Apache FQDN warning on cloud instances with no reverse DNS.
+# Suppress Apache's "Could not determine FQDN" warning which causes slow
+# startup on cloud instances that have no DNS reverse entry.
 grep -q "^ServerName" /etc/apache2/apache2.conf || \
   echo "ServerName 127.0.0.1" | sudo tee -a /etc/apache2/apache2.conf
 
-# Detect the primary LAN/VM IP — works on VirtualBox, bare metal, and cloud.
-# Falls back to 127.0.0.1 if no non-loopback address is found.
-SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
-SERVER_IP="${SERVER_IP:-127.0.0.1}"
+# Detect this machine's IP for the vhost ServerName.
+# Using the real IP (not "localhost") avoids redirect loops when cloud users
+# hit the server via its public address and Passenger generates absolute URLs.
+SERVER_IP=$(detect_server_ip)
 
 sudo a2dissite 000-default 2>/dev/null || true
 sudo tee /etc/apache2/sites-available/cafe_grader.conf > /dev/null <<EOF
@@ -436,12 +430,18 @@ EOF
 sudo a2ensite cafe_grader
 
 # Grant Apache (www-data) traversal permission on the home directory.
+# Ubuntu sets home dirs to chmod 750 by default — www-data cannot traverse
+# into them, which causes a 403 Forbidden even when vhost config is correct.
+# chmod o+x adds the execute (traversal) bit for others only; it does NOT
+# expose the contents of the home directory to other system users.
 chmod o+x "$HOME"
 
+# Validate config before restarting — surfaces errors with clear diagnostics
+# instead of crashing Apache silently.
 echo "  Validating Apache configuration..."
 if ! sudo apache2ctl configtest 2>&1; then
   echo ""
-  echo "  ERROR: Apache config test failed. Paths written:"
+  echo "  ERROR: Apache config test failed. Dumping passenger module paths:"
   echo "    PASSENGER_MODULE=$PASSENGER_MODULE"
   echo "    PASSENGER_ROOT=$PASSENGER_ROOT"
   echo "    PASSENGER_RUBY=$PASSENGER_RUBY"
@@ -452,12 +452,10 @@ fi
 sudo systemctl restart apache2
 echo "  Apache + Passenger configured."
 
-# Open port 80 in ufw if active (safe no-op if ufw is inactive or port already open).
-if sudo ufw status 2>/dev/null | grep -q "^Status: active"; then
-  sudo ufw allow 80/tcp
-  echo "  ufw: allowed TCP port 80."
-fi
+# Open port 80 in ufw if active; print reminder for cloud security groups.
+ufw_allow_if_active 80
 
+# ---------------------------------------------------------------
 # 12. Solid Queue systemd service
 # ---------------------------------------------------------------
 echo "[12/13] Installing Solid Queue systemd service..."
@@ -561,8 +559,14 @@ echo "============================================================"
 echo " Installation complete!"
 echo "============================================================"
 echo ""
+FINAL_IP=$(detect_server_ip)
+echo "  Web app URL  ->  http://$FINAL_IP"
 echo "  Default login  ->  username: root   password: ioionrails"
 echo "  Change the password immediately after first login."
+echo ""
+echo "  Cloud users — ensure these ports are open in your"
+echo "  security group / firewall before accessing the site:"
+echo "    - Port 80  (HTTP — web interface)"
 echo ""
 echo "  ONE STEP REQUIRED:"
 echo ""

@@ -25,6 +25,30 @@ REPO_URL="https://github.com/MaxzyMVT/cafe-grader-web.git"
 LINUX_USER="$USER"
 APP_DIR="$CAFE_DIR/web"
 
+# ---------------------------------------------------------------
+# Cloud compatibility helpers
+# ---------------------------------------------------------------
+detect_server_ip() {
+  local ip=""
+  ip=$(curl -sf --max-time 2 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null) && \
+    echo "$ip" && return
+  ip=$(curl -sf --max-time 2 -H "Metadata: true" \
+    "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/publicIpAddress?api-version=2021-02-01&format=text" \
+    2>/dev/null) && echo "$ip" && return
+  ip=$(ip -4 addr show scope global 2>/dev/null | awk '/inet/{print $2}' | cut -d/ -f1 | head -1)
+  echo "${ip:-<your-server-IP>}"
+}
+ufw_allow_if_active() {
+  local port="$1"
+  if sudo ufw status 2>/dev/null | grep -q "^Status: active"; then
+    sudo ufw allow "${port}/tcp"
+    echo "  ufw: opened port $port/tcp."
+  else
+    echo "  ufw inactive — skipping ufw rule for port $port."
+    echo "  Cloud users: open port $port in your security group / firewall rules."
+  fi
+}
+
 echo "============================================================"
 echo " Cafe-Grader Web/DB Server Installation (Ubuntu 22.04+)"
 echo "============================================================"
@@ -147,18 +171,16 @@ bundle install
 # ---------------------------------------------------------------
 # 5. Rails master key + credentials
 # ---------------------------------------------------------------
-echo "[5/9] Generating Rails master key and credentials..."
-
-# Remove any stale/mismatched key+credentials pair. A mismatch causes:
-#   ActiveSupport::MessageEncryptor::InvalidMessage: missing separator
-# at db:migrate time because Rails decrypts credentials during environment
-# load (config/environment.rb:5). EDITOR=true runs non-interactively.
-rm -f config/master.key config/credentials.yml.enc
-
-EDITOR=true bundle exec rails credentials:edit
-chmod 600 config/master.key
-echo "  master.key and credentials.yml.enc generated (matched pair)."
-echo "  *** BACK UP $APP_DIR/config/master.key ***"
+echo "[5/9] Generating Rails master key..."
+if [ ! -f config/master.key ]; then
+  cp config/credentials.yml.SAMPLE config/credentials.yml.enc
+  openssl rand -hex 32 > config/master.key
+  chmod 600 config/master.key
+  echo "  master.key generated."
+  echo "  *** BACK UP $APP_DIR/config/master.key ***"
+else
+  echo "  master.key already exists, skipping."
+fi
 
 # ---------------------------------------------------------------
 # 6. Database setup + asset compilation
@@ -237,10 +259,16 @@ EOF
 # Ensure the module is enabled (idempotent — safe to run even if already enabled).
 sudo a2enmod passenger
 
+# Suppress Apache FQDN warning on cloud instances with no reverse DNS.
+grep -q "^ServerName" /etc/apache2/apache2.conf || \
+  echo "ServerName 127.0.0.1" | sudo tee -a /etc/apache2/apache2.conf
+
+SERVER_IP=$(detect_server_ip)
+
 sudo a2dissite 000-default 2>/dev/null || true
 sudo tee /etc/apache2/sites-available/cafe_grader.conf > /dev/null <<EOF
 <VirtualHost *:80>
-  ServerName localhost
+  ServerName $SERVER_IP
   DocumentRoot $APP_DIR/public
 
   <Directory $APP_DIR/public>
@@ -279,6 +307,11 @@ fi
 
 sudo systemctl restart apache2
 echo "  Apache + Passenger configured."
+
+# Open ports in ufw if active; remind cloud users about security groups.
+ufw_allow_if_active 80
+# Port 3306 must be open from worker node IPs for the 3-server setup.
+ufw_allow_if_active 3306
 
 # ---------------------------------------------------------------
 # 8. Solid Queue systemd service
@@ -353,11 +386,18 @@ echo "============================================================"
 echo " Web/DB Server installation complete!"
 echo "============================================================"
 echo ""
+FINAL_IP=$(detect_server_ip)
+echo "  Web app URL  ->  http://$FINAL_IP"
 echo "  Default login  ->  username: root   password: ioionrails"
 echo "  Change the password immediately after first login."
 echo ""
-echo "  Note this server's IP address — you will need it when"
-echo "  running install_worker_server.sh on each worker node."
+echo "  Cloud users — ensure these ports are open in your"
+echo "  security group / firewall before use:"
+echo "    - Port 80   (HTTP — web interface)"
+echo "    - Port 3306 (MySQL — worker nodes only, restrict source IPs)"
+echo ""
+echo "  This server's IP for worker node setup: $FINAL_IP"
+echo "  Run on each worker:  bash install_worker_server.sh $FINAL_IP"
 echo ""
 echo "  ONE STEP REQUIRED:"
 echo ""
