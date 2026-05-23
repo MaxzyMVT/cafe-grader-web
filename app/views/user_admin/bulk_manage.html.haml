@@ -66,7 +66,7 @@
             = check_box_tag :add_group, true, params[:add_group], class: 'form-check-input'
             = label_tag :add_group, 'Add users to group', class: 'form-check-label'
           .col-auto
-            = select_tag :group_name, options_from_collection_for_select( Group.all.order('id DESC'), 'id','name',params[:group_id]), class: 'select2', style: 'width: 20em';
+            = select_tag :group_name, options_for_select([['None (clear group)', 'none']] + Group.all.order('id DESC').map { |g| [g.name, g.id] }, params[:group_name]), class: 'select2', style: 'width: 20em';
         .row.row-cols-lg-auto.align-items-center.my-3
           .col-auto
             = check_box_tag :change_roles, true, params[:change_roles], class: 'form-check-input'
@@ -103,7 +103,10 @@
             - if @action[:add_group]
               .alert.alert-info.d-flex.align-items-center.gap-2.mb-3
                 %span.mi group_add
-                The following users will be added to group: "#{Group.find(params[:group_name]).name}"
+                - if params[:group_name] == 'none'
+                  The groups of the following users will be CLEARED.
+                - else
+                  The following users will be added to group: "#{Group.find(params[:group_name]).name}"
             - if @action[:change_roles]
               .alert.alert-info.d-flex.align-items-center.gap-2.mb-3
                 %span.mi shield
