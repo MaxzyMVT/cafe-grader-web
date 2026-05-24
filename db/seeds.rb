@@ -43,10 +43,17 @@ CONFIGURATIONS =
    },
 
    {
-     key: 'system.disable_penalty',
+     key: 'point_hint.disable_penalty',
      value_type: 'boolean',
      default_value: 'false',
      description: 'If true, the scoreboard will show scores without any deductions (penalties).'
+   },
+
+   {
+     key: 'point_hint.disable_bonus',
+     value_type: 'boolean',
+     default_value: 'false',
+     description: 'If true, the scoreboard and header will not calculate or show bonus points.'
    },
 
    {

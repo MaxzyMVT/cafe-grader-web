@@ -125,10 +125,10 @@ class User < ApplicationRecord
 
     total_deductions = problem_hint_deductions + submission_deductions
     
-    # Bonus points
-    bonus = bonus_score
+    deductions = GraderConfiguration.disable_penalty? ? 0.0 : total_deductions
+    bonus = GraderConfiguration.disable_bonus? ? 0.0 : bonus_score
 
-    [0.0, (raw_problem_scores - total_deductions + bonus).to_f].max
+    [0.0, (raw_problem_scores - deductions + bonus).to_f].max
   end
   def enabled?
     return false unless self[:enabled]
