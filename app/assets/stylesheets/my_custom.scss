@@ -112,6 +112,7 @@ header {
 // Global interactive touches
 .card {
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease !important;
+  contain: layout style; // isolate repaint scope
   &:hover {
     transform: translateY(-3px);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
@@ -119,7 +120,7 @@ header {
 }
 
 .btn {
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
   &:hover:not(:disabled) {
     transform: translateY(-1px) scale(1.02);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
@@ -130,13 +131,14 @@ header {
 }
 
 .form-control, .form-select {
-  transition: all 0.2s ease !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
 }
 
 .navbar {
-  transition: all 0.3s ease !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  // Only transition specific visual properties - avoid 'all' which causes full-style recalc
+  transition: background-color 0.3s ease, box-shadow 0.3s ease !important;
+  // backdrop-filter is applied by each theme individually; keep it off globally
+  // to avoid creating an unnecessary compositing layer on the default theme.
 }
 
 .form-check-thick {

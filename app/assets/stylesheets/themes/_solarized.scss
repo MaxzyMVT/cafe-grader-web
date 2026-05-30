@@ -124,7 +124,8 @@
   // Global Dropdown Override
   .dropdown-menu {
     background-color: rgba(238, 232, 213, 0.95) !important;
-    backdrop-filter: blur(12px) !important;
+    will-change: backdrop-filter;
+    backdrop-filter: blur(8px) !important;
     border-color: #ddd6c1 !important;
     box-shadow: 0 10px 40px rgba(7, 54, 66, 0.1) !important;
     .dropdown-item {
@@ -137,7 +138,8 @@
 
   .navbar {
     background-color: rgba(7, 54, 66, 0.9) !important;
-    backdrop-filter: blur(10px);
+    will-change: backdrop-filter;
+    backdrop-filter: blur(6px);
     .navbar-brand, .nav-link, .mi, .nav-link .mi { color: #93a1a1 !important; }
     .nav-link:hover { color: #fdf6e3 !important; }
   }
@@ -164,7 +166,8 @@
   // Cards
   .card {
     background-color: rgba(253, 246, 227, 0.9) !important;
-    backdrop-filter: blur(8px);
+    will-change: backdrop-filter;
+    backdrop-filter: blur(6px);
     border-color: #eee8d5 !important;
     .card-header { background-color: rgba(238, 232, 213, 0.6) !important; border-bottom: 1px solid #ddd6c1 !important; color: #657b83 !important; font-weight: 600 !important; }
   }
