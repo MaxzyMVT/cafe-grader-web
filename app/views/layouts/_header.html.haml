@@ -1,5 +1,5 @@
 %header
-  %nav.navbar.navbar-dark.bg-primary.navbar-expand-lg.shadow
+  %nav.navbar.navbar-dark.bg-primary.navbar-expand-xl.shadow
     .container-fluid
       %a.navbar-brand.d-flex.align-items-center.gap-1{href: list_main_path}
         %span.mi home
@@ -41,12 +41,12 @@
                 %li= link_to 'View', submissions_path, class: 'dropdown-item '+active_class_when(controller: :submissions)
           / hall of fame
           - if GraderConfiguration['right.user_hall_of_fame']
-            %li= link_to "#{I18n.t 'menu.hall_of_fame'}", problem_hof_report_path, class: 'nav-link mx-2'+active_class_when(controller: :report, action: :problem_hof)
+            %li.nav-item= link_to "#{I18n.t 'menu.hall_of_fame'}", problem_hof_report_path, class: 'nav-link mx-2'+active_class_when(controller: :report, action: :problem_hof)
           / scoreboard
           - if GraderConfiguration['system.scoreboard_enabled']
             - level = GraderConfiguration['system.scoreboard_view_level'] || 'user'
             - if level == 'all' || (level == 'user' && @current_user) || (level == 'admin' && @current_user&.admin?)
-              %li= link_to "Scoreboard", scoreboard_path, class: 'nav-link mx-2'+active_class_when(controller: :scoreboard)
+              %li.nav-item= link_to "Scoreboard", scoreboard_path, class: 'nav-link mx-2'+active_class_when(controller: :scoreboard)
           / admin section
           - if @current_user && (@current_user.admin? || @current_user.problem_setter? || @current_user.groups_for_action(:edit).any?)
             / management
@@ -84,20 +84,20 @@
                 %li= link_to 'Login Report', login_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :login)
                 %li= link_to 'AI Report', ai_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :ai)
                 %li= link_to 'Statistics Report', extended_stat_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :extended_stat)
-            .d-flex
+            %li.nav-item.d-flex.align-items-center
               - if @current_user.admin?
                 =link_to "#{@backlog} backlogs!",
                   grader_processes_path,
-                  class: 'navbar-btn btn btn-default btn-warning', data: {toggle: 'tooltip'},title: 'Number of ungraded submission'
+                  class: 'navbar-btn btn btn-default btn-warning me-2', data: {toggle: 'tooltip'},title: 'Number of ungraded submission'
               = form_with id: :view_sub_form, url: list_main_path, method: :get do |f|
-                .input-group.mx-2
+                .input-group.flex-nowrap
                   %input#view_sub_num.form-control{style: "width: 7rem", type: :text, placeholder: 'Submission #'}
                   %button#view_sub.btn.btn-secondary{type: :button, onclick: "go_to_sub();"} View
           - elsif @current_user && @current_user.problem_setter?
-            %li= link_to 'Report', extended_stat_report_path, class: 'nav-link mx-2'+active_class_when(controller: :report, action: :extended_stat)
-            .d-flex
+            %li.nav-item= link_to 'Report', extended_stat_report_path, class: 'nav-link mx-2'+active_class_when(controller: :report, action: :extended_stat)
+            %li.nav-item.d-flex.align-items-center
               = form_with id: :view_sub_form, url: list_main_path, method: :get do |f|
-                .input-group.mx-2
+                .input-group.flex-nowrap
                   %input#view_sub_num.form-control{style: "width: 7rem", type: :text, placeholder: 'Submission #'}
                   %button#view_sub.btn.btn-secondary{type: :button, onclick: "go_to_sub();"} View
         %ul.navbar-nav

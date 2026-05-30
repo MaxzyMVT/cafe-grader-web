@@ -195,10 +195,15 @@ class ContestsController < ApplicationController
       audit_action = 'bulk_remove_users'
       audit_changes = { 'removed_count' => [nil, affected_count] }
     when 'clear_ip'
-      AuditLog.paused { @contest.users.update_all(last_ip: nil) }
-      @toast[:body] = "Device locks of all users are cleared. The user can now log in from a new device."
-      audit_action = 'bulk_clear_user_ips'
-      audit_changes = { 'affected_count' => [nil, affected_count] }
+      if @current_user.admin?
+        AuditLog.paused { @contest.users.update_all(last_ip: nil) }
+        @toast[:body] = "Device locks of all users are cleared. The user can now log in from a new device."
+        audit_action = 'bulk_clear_user_ips'
+        audit_changes = { 'affected_count' => [nil, affected_count] }
+      else
+        @toast[:body] = "ERROR: Only administrators can clear locks."
+        @toast[:type] = :alert
+      end
     else
       @toast[:body] = "ERROR: Unknown command"
       @toast[:type] = :alert
@@ -226,8 +231,13 @@ class ContestsController < ApplicationController
       gu.update(enabled: !gu.enabled?)
       @toast[:body] = 'User was updated.'
     when 'clear_ip'
-      @user.update(last_ip: nil)
-      @toast[:body] = 'User session was cleared.'
+      if @current_user.admin?
+        @user.update(last_ip: nil)
+        @toast[:body] = 'User session was cleared.'
+      else
+        @toast[:body] = 'ERROR: Only administrators can clear user sessions.'
+        @toast[:type] = :alert
+      end
     when 'make_editor', 'make_user'
       target_role = params[:command].split('_')[1]
 
@@ -469,6 +479,10 @@ class ContestsController < ApplicationController
   end
 
   def set_system_mode
+    unless @current_user.admin?
+      redirect_to contests_path, alert: 'Only admins can switch grader modes.' and return
+    end
+
     unless ['standard', 'contest', 'indv-contest', 'analysis'].include? params[:mode]
       redirect_to contests_path, notice: 'Unrecognized mode' and return
     end

@@ -533,3 +533,12 @@ golden-btn + .golden-btn { margin-top: 1em; }
 .role-user-select + .select2-container {
   min-width: 20rem !important;
 }
+
+// Navbar styling rules for medium sizes
+.navbar-nav {
+  align-items: center;
+
+  .nav-link, .nav-item, .link-flex {
+    white-space: nowrap !important;
+  }
+}

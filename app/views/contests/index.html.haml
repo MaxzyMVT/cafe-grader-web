@@ -28,17 +28,18 @@
               Select the operating mode for the system
 
         = form_with url: set_system_mode_contests_path, class: 'w-100' do |form|
-          .btn-group.w-100
+          - tooltip_data = !@current_user.admin? ? { bs: { toggle: 'tooltip', title: 'Only administrators can switch grader modes.' } } : {}
+          .btn-group.w-100{ data: tooltip_data }
             - mode = GraderConfiguration.get('system.mode')
-            %button.btn.btn-flex.w-100{type: 'submit', name: 'mode', value: 'standard',class: mode == 'standard' ? 'btn-success' : 'btn-outline-secondary' } 
+            %button.btn.btn-flex.w-100{type: 'submit', name: 'mode', value: 'standard',class: mode == 'standard' ? 'btn-success' : 'btn-outline-secondary', disabled: !@current_user.admin? } 
               - if mode == 'standard'
                 %span.mi.fill check_circle
               Normal
-            %button.btn.btn-flex.w-100{type: 'submit', name: 'mode', value: 'contest',class: mode == 'contest' ? 'btn-warning' : 'btn-outline-secondary'}
+            %button.btn.btn-flex.w-100{type: 'submit', name: 'mode', value: 'contest',class: mode == 'contest' ? 'btn-warning' : 'btn-outline-secondary', disabled: !@current_user.admin? }
               - if mode == 'contest'
                 %span.mi.fill check_circle
               Contest
-            %button.btn.btn-flex.w-100{type: 'submit', name: 'mode', value: 'analysis',class: mode == 'analysis' ? 'btn-info' : 'btn-outline-secondary'}
+            %button.btn.btn-flex.w-100{type: 'submit', name: 'mode', value: 'analysis',class: mode == 'analysis' ? 'btn-info' : 'btn-outline-secondary', disabled: !@current_user.admin? }
               - if mode == 'analysis'
                 %span.mi.fill check_circle
               Analysis
@@ -68,9 +69,11 @@
                 %a.text-decoration-none.small.text-primary.fst-italic.btn-flex.me-3{ data: { bs_toggle: "collapse" }, href: "#lockHelp", role: "button", aria: { expanded: "false", controls: "lockHelp" } }
                   %span.mi.fill help
                   How does this work?
-                = link_to clear_user_ip_grader_configuration_index_path, class: 'btn btn-flex btn-outline-danger text-nowrap', data: { turbo: true, 'turbo-method': 'post' } do
-                  %span.mi lock_open
-                  Clear Locks
+                - clear_tooltip_data = !@current_user.admin? ? { bs: { toggle: 'tooltip', title: 'Only administrators can clear all session locks.' } } : {}
+                %span{ data: clear_tooltip_data }
+                  = link_to clear_user_ip_grader_configuration_index_path, class: "btn btn-flex btn-outline-danger text-nowrap #{@current_user.admin? ? '' : 'disabled'}", data: { turbo: true, 'turbo-method': 'post' } do
+                    %span.mi lock_open
+                    Clear Locks
             .text-center
 
               #lockHelp.collapse.mt-2.text-start

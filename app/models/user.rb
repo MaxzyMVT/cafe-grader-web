@@ -227,7 +227,7 @@ class User < ApplicationRecord
   #
   # valid action is either :submit, :edit
   def contests_for_action(action)
-    return Contest.all if admin?
+    return Contest.all if admin? || problem_setter?
     return Contest.none unless enabled?
     action = action.to_sym
 

@@ -37,6 +37,7 @@ export const renderers = {
           </a>
           <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm">
             <li><h6 class="dropdown-header">Actions for ${row['login']}</h6></li>
+            ${window.CafeUI && window.CafeUI.currentUser && window.CafeUI.currentUser.isAdmin ? `
             <li>
               <a class="dropdown-item d-flex align-items-center gap-2" href="#" 
                  data-action="click->contest#postUserAction" 
@@ -46,6 +47,7 @@ export const renderers = {
                 Clear Session Lock
               </a>
             </li>
+            ` : ''}
             <li>
               <a class="dropdown-item d-flex align-items-center gap-2" href="#" 
                  data-action="click->contest#postUserAction" 

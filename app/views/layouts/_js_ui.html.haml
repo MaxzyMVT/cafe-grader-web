@@ -11,5 +11,8 @@
     badges: {
       yes: "#{j format_key_pair_value(true, :yes_no)}",
       no: "#{j format_key_pair_value(false, :yes_no)}"
+    },
+    currentUser: {
+      isAdmin: #{@current_user&.admin? || false}
     }
   }
