@@ -12,9 +12,7 @@ class Contest < ApplicationRecord
   # scope :active, -> (time = Time.zone.now) { where(enabled: true).where('start <= ? and stop >= ?',time,time)}
 
 
-  scope :editable_by_user, ->(user_id) {
-    joins(:contests_users).where(contests_users: { user_id: user_id, enabled: true, role: 'editor' })
-  }
+
 
   scope :submittable_by_user, ->(user_id) {
     joins(:contests_users).where(contests_users: { user_id: user_id, enabled: true })
@@ -38,7 +36,7 @@ class Contest < ApplicationRecord
     Users.where(id: user_ids, enabled: true)
   end
 
-  def add_users(new_users, role: 'user')
+  def add_users(new_users)
     return AddResult.new(added: 0, skipped: 0) if new_users.blank?
 
     # remove already existing users
@@ -49,7 +47,7 @@ class Contest < ApplicationRecord
     num_skipped = requested_user_ids.count - num_added
 
     user_ids_to_add.each do |user_id|
-      self.contests_users.build(user_id: user_id, role: role)
+      self.contests_users.build(user_id: user_id)
     end
     return AddResult.new(added: num_added, skipped: num_skipped)
   end

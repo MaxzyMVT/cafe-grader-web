@@ -22,12 +22,6 @@ export const renderers = {
     // only render for display
     if (type != 'display') return ''
 
-    // roles and labels
-    const isEditor = row['role'] === 'editor';
-    const toggleRoleLabel = isEditor ? 'Set as User' : 'Set as Editor';
-    const toggleRoleCommand = isEditor ? 'make_user' : 'make_editor';
-    const toggleRoleIcon = isEditor ? 'person' : 'shield_person';
-
     return `
       <div class="d-flex align-items-center">
         <span>&nbsp; </span>
@@ -43,20 +37,11 @@ export const renderers = {
                  data-action="click->contest#postUserAction" 
                  data-row-id="${row['user_id']}" 
                  data-command="clear_ip">
-                <span class="mi md-18 text-warning">lock_reset</span>
-                Clear Session Lock
+               <span class="mi md-18 text-warning">lock_reset</span>
+               Clear Session Lock
               </a>
             </li>
             ` : ''}
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2" href="#" 
-                 data-action="click->contest#postUserAction" 
-                 data-row-id="${row['user_id']}" 
-                 data-command="${toggleRoleCommand}">
-                <span class="mi md-18 text-info">${toggleRoleIcon}</span>
-                ${toggleRoleLabel}
-              </a>
-            </li>
             <li><hr class="dropdown-divider"></li>
             <li>
               <a class="dropdown-item d-flex align-items-center gap-2 text-danger" href="#" 

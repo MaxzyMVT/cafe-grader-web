@@ -116,7 +116,7 @@ class ContestsController < ApplicationController
   # POST /contests.xml
   def create
     @contest = Contest.new(contests_params)
-    @contest.add_users(User.where(id: @current_user.id), role: 'editor')
+    @contest.add_users(User.where(id: @current_user.id))
 
     respond_to do |format|
       if @contest.save
@@ -236,16 +236,6 @@ class ContestsController < ApplicationController
         @toast[:body] = 'User session was cleared.'
       else
         @toast[:body] = 'ERROR: Only administrators can clear user sessions.'
-        @toast[:type] = :alert
-      end
-    when 'make_editor', 'make_user'
-      target_role = params[:command].split('_')[1]
-
-      if @user != @current_user || @user.admin? || target_role == 'editor'
-        ContestUser.where(user: @user, contest: @contest).update(role: target_role)
-        @toast[:body] = "#{@user.login}'s role changed to #{target_role}."
-      else
-        @toast[:body] = "Cannot demote yourself"
         @toast[:type] = :alert
       end
     else

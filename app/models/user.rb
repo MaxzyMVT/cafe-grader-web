@@ -233,7 +233,7 @@ class User < ApplicationRecord
 
     # normal mode
     if action == :edit
-      return Contest.editable_by_user(self.id)
+      return Contest.none
     elsif action == :submit
       return Contest.submittable_by_user(self.id)
     else
