@@ -100,6 +100,7 @@ class ScoreboardController < ApplicationController
       disabled_group_user_ids = User.joins(:groups).where(groups: { enabled: false }).pluck(:id)
       setter_admin_ids = User.joins(:roles).where(roles: { name: ['admin', 'problem_setter'] }).pluck(:id)
       @groups = Group.where(enabled: true)
+      @group_score_type = GraderConfiguration['system.group_score_type'] || 'group_sum'
       @leaderboard = @groups.map do |g|
         group_users = g.users.where(enabled: true).where.not(id: disabled_group_user_ids + setter_admin_ids)
         group_total = 0
@@ -124,11 +125,19 @@ class ScoreboardController < ApplicationController
           end
 
           user_final = [0.0, user_raw_total - user_deducted + user_bonus].max
-          group_total += user_final
+          group_total += user_final if @group_score_type == 'group_sum'
           group_deducted += user_deducted
           group_bonus += user_bonus
           { user: u, total_score: user_final, deducted_score: user_deducted, bonus_score: user_bonus }
         end
+
+        if @group_score_type == 'group_max'
+          group_raw_total = @problems.sum do |p|
+            group_users.map { |u| @scores[u.id][p.id] || 0 }.max || 0
+          end
+          group_total = [0.0, group_raw_total - group_deducted + group_bonus].max
+        end
+
         group_members.sort_by! { |m| [-m[:total_score], m[:user].full_name.to_s.downcase] }
         
         { group: g, total_score: group_total, deducted_score: group_deducted, bonus_score: group_bonus, members: group_members }
@@ -177,13 +186,13 @@ class ScoreboardController < ApplicationController
 
     level = GraderConfiguration['system.scoreboard_view_level'] || 'user'
     case level
-    when 'all'
+    when 'all', 'public'
       # anyone can see
     when 'user'
       check_valid_login
     when 'admin'
       check_valid_login
-      unless @current_user.admin?
+      unless @current_user.admin? || @current_user.problem_setter?
         redirect_to root_path, alert: 'Only admins can access the scoreboard.'
       end
     end

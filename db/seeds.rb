@@ -29,6 +29,13 @@ CONFIGURATIONS =
    },
 
    {
+     key: 'system.group_score_type',
+     value_type: 'string',
+     default_value: 'group_sum',
+     description: 'Group Scoreboard calculation mode: group_sum (sum of user scores) or group_max (max score per problem)'
+   },
+
+   {
      key: 'system.message_enabled',
      value_type: 'boolean',
      default_value: 'true',

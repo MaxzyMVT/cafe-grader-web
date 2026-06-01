@@ -157,4 +157,19 @@ GraderConfiguration_25:
   value_type: boolean
   value: 'true'
 
+GraderConfiguration_26:
+  key: system.group_score_type
+  value_type: string
+  value: group_sum
+
+GraderConfiguration_27:
+  key: system.scoreboard_include_admins
+  value_type: boolean
+  value: 'false'
+
+GraderConfiguration_28:
+  key: system.statistic_include_admins
+  value_type: boolean
+  value: 'false'
+
 

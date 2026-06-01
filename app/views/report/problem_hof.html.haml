@@ -8,7 +8,7 @@
         %span.mi sync
     - if GraderConfiguration['system.scoreboard_enabled']
       - level = GraderConfiguration['system.scoreboard_view_level'] || 'user'
-      - if level == 'all' || (level == 'user' && @current_user) || (level == 'admin' && @current_user&.admin?)
+      - if level == 'all' || level == 'public' || (level == 'user' && @current_user) || (level == 'admin' && (@current_user&.admin? || @current_user&.problem_setter?))
         = link_to scoreboard_path, class: 'btn btn-sm btn-outline-primary shadow-sm d-inline-flex align-items-center justify-content-center gap-2' do
           %span.mi leaderboard
           Score Board

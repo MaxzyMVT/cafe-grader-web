@@ -521,6 +521,13 @@ class User < ApplicationRecord
     # a user can view their own submissions
     return true if submission.user == self
 
+    # In group_max mode, a user can view submissions of other members in their group(s)
+    if GraderConfiguration['system.group_score_type'] == 'group_max'
+      if (self.groups & submission.user.groups).any?
+        return true
+      end
+    end
+
     # check global disable
     return false unless GraderConfiguration["right.user_view_submission"]
 

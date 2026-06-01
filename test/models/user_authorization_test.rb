@@ -328,6 +328,40 @@ class UserAuthorizationTest < ActiveSupport::TestCase
     assert mary.can_view_submission?(submissions(:add1_by_john))
   end
 
+  test "can_view_submission: group member can view other group members' submissions in group_max mode" do
+    set_grader_config("system.mode", "standard")
+    set_grader_config("system.group_score_type", "group_max")
+    set_grader_config("right.user_view_submission", "false")
+
+    john = users(:john)
+    james = users(:james) # both are in group_a in fixtures
+    sub = submissions(:add1_by_james)
+
+    unless john.can_view_submission?(sub)
+      puts "\n=== DEBUG INFO FOR FAILURE ==="
+      puts "john.enabled?: #{john.enabled?}"
+      puts "john groups: #{john.groups.pluck(:id, :name, :enabled).inspect}"
+      puts "james groups: #{james.groups.pluck(:id, :name, :enabled).inspect}"
+      puts "john submittable problems: #{john.problems_for_action(:submit).pluck(:id, :name).inspect}"
+      puts "sub problem: #{sub.problem.id} (#{sub.problem.name})"
+      puts "config group_score_type: #{GraderConfiguration['system.group_score_type'].inspect}"
+      puts "config use_problem_group: #{GraderConfiguration['system.use_problem_group'].inspect}"
+      puts "==============================\n"
+    end
+
+    assert john.can_view_submission?(sub)
+  end
+
+  test "can_view_submission: group member CANNOT view other group members' submissions in group_sum mode" do
+    set_grader_config("system.mode", "standard")
+    set_grader_config("system.group_score_type", "group_sum")
+    set_grader_config("right.user_view_submission", "false")
+
+    john = users(:john)
+    james = users(:james)
+    assert_not john.can_view_submission?(submissions(:add1_by_james))
+  end
+
   # -------------------------------------------------------
   # SECTION 6: can_view_testcase? (prevents data leakage)
   # -------------------------------------------------------

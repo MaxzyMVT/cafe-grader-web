@@ -213,6 +213,26 @@ class MainController < ApplicationController
       .each do |row|
         @prob_submissions[row.id][:hint_cost] = row.cost
       end
+
+    @group_max_scores = {}
+    if GraderConfiguration['system.group_score_type'] == 'group_max'
+      user_group_ids = @current_user.groups.where(enabled: true).pluck(:id)
+      if user_group_ids.any?
+        disabled_group_user_ids = User.joins(:groups).where(groups: { enabled: false }).pluck(:id)
+        setter_admin_ids = User.joins(:roles).where(roles: { name: ['admin', 'problem_setter'] }).pluck(:id)
+        group_user_ids = User.joins(:groups)
+                             .where(groups: { id: user_group_ids })
+                             .where(enabled: true)
+                             .where.not(id: disabled_group_user_ids + setter_admin_ids)
+                             .pluck(:id).uniq
+
+        if group_user_ids.any?
+          @group_max_scores = Submission.where(user_id: group_user_ids, problem_id: @problems.ids)
+                                        .group(:problem_id)
+                                        .maximum(:points)
+        end
+      end
+    end
   end
 
   def prepare_grading_result(submission)

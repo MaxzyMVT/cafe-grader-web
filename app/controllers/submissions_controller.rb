@@ -32,6 +32,21 @@ class SubmissionsController < ApplicationController
 
       if @current_user.admin? || @current_user.problem_setter?
         @submissions = Submission.where(problem: @problem).includes(:user, :language).order(id: :desc)
+      elsif GraderConfiguration['system.group_score_type'] == 'group_max'
+        user_group_ids = @current_user.groups.where(enabled: true).pluck(:id)
+        disabled_group_user_ids = User.joins(:groups).where(groups: { enabled: false }).pluck(:id)
+        setter_admin_ids = User.joins(:roles).where(roles: { name: ['admin', 'problem_setter'] }).pluck(:id)
+        group_user_ids = User.joins(:groups)
+                             .where(groups: { id: user_group_ids })
+                             .where(enabled: true)
+                             .where.not(id: disabled_group_user_ids + setter_admin_ids)
+                             .pluck(:id).uniq
+        group_user_ids = (group_user_ids + [@current_user.id]).uniq
+
+        @submissions = Submission.where(user_id: group_user_ids, problem: @problem).includes(:user, :language).order(id: :desc)
+        if GraderConfiguration.contest_mode?
+          @submissions = @submissions.where(submitted_at: @current_user.active_contests_range)
+        end
       elsif GraderConfiguration.contest_mode?
         # when in contest mode, show only submission during this contest
         @submissions = Submission.where(user: @current_user, problem: @problem).where(submitted_at: @current_user.active_contests_range).order(id: :desc)

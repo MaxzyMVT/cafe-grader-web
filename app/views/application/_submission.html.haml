@@ -1,5 +1,5 @@
 %tr
-  - if @current_user.admin? || @current_user.problem_setter?
+  - if @current_user.admin? || @current_user.problem_setter? || GraderConfiguration['system.group_score_type'] == 'group_max'
     %td
       = submission.user.login
       %br

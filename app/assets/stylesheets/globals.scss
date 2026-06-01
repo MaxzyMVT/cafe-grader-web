@@ -97,6 +97,11 @@ $color-gray-light: #eeeeee;
   --color-loot-box-bg: #fd7e14;
 }
 
+body:not([data-theme]), body[data-theme=""] {
+  --color-scoreboard-sticky-bg: #f8fafc;
+  --color-scoreboard-sticky-header-bg: #e9ecef;
+}
+
 // Submission Limit Badges
 .badge-limit-info {
   background-color: var(--color-limit-info-bg) !important;
@@ -107,6 +112,7 @@ $color-gray-light: #eeeeee;
   background-color: var(--color-limit-danger-bg) !important;
   color: var(--color-limit-text) !important;
 }
+
 
 // Problem management row highlight
 .row-available {

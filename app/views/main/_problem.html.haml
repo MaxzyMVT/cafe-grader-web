@@ -12,6 +12,11 @@
   - limit_reached = problem.submission_limit_reached?(@current_user)
   %td{style: 'min-width: 200px; max-width: 450px; overflow-wrap: anywhere;'}
     = render partial: 'problems/problem_name', locals: {problem: problem}
+    - if @group_max_scores && @group_max_scores[problem.id]
+      .mt-1
+        %span.badge.bg-info-subtle.text-info-emphasis.border.border-info-subtle.d-inline-flex.align-items-center.gap-1{title: 'Maximum score achieved by your group'}
+          %span.mi{style: 'font-size: 0.85rem;'} group
+          = "Group Max: #{number_with_precision(@group_max_scores[problem.id], precision: 2, strip_insignificant_zeros: true)}"
   %td.text-end.d-none.d-md-table-cell{style: 'width: 5rem;'}
     = number_with_precision problem.full_score, precision: 2, strip_insignificant_zeros: true
 

@@ -15,8 +15,16 @@
           %option{value: "name", selected: params[:sort] == 'name'} Sort by Name
 
   = turbo_frame_tag "scoreboard" do
+    - if @mode == 'group'
+      .d-flex.justify-content-center.mb-3
+        .d-flex.w-100{style: "min-width: 75%; max-width: 100%;"}
+          %span.badge.bg-info-subtle.text-info-emphasis.border.border-info-subtle.px-3.py-2.fs-6.d-inline-flex.align-items-center.gap-2
+            %i.mi.mi-info.md-18
+            %span
+              Scoring Mode:
+              %strong= @group_score_type == 'group_max' ? "Group Max (Highest score per problem)" : "Group Sum (Sum of member scores)"
     .d-flex.justify-content-center
-      .card.shadow-sm{style: "min-width: 75%; max-width: 100%;"}
+      .card.shadow-sm.scoreboard-card{style: "min-width: 75%; max-width: 100%;"}
         .card-body.p-0
           .table-responsive{style: "max-height: 80vh; overflow-y: auto;"}
             %table.table.table-hover.table-bordered.m-0.scoreboard-table.w-100
@@ -74,7 +82,7 @@
                       - unless GraderConfiguration.disable_penalty?
                         %td.text-center.text-danger= format_score(entry[:deducted_score]) if entry[:deducted_score].to_f > 0
                       - @problems.each do |p|
-                        - group_score = entry[:members].map { |m| @scores[m[:user].id][p.id] || 0 }.sum
+                        - group_score = @group_score_type == 'group_max' ? entry[:members].map { |m| @scores[m[:user].id][p.id] || 0 }.max : entry[:members].map { |m| @scores[m[:user].id][p.id] || 0 }.sum
                         %td.text-center.fw-bold
                           = format_score(group_score) if group_score.to_f > 0
                     - entry[:members].each do |m|
@@ -101,6 +109,14 @@
                                   %span.mi.text-danger.md-12{title: "Blood Winner ##{idx + 1}! Received #{formatted_bonus} bonus!"} bloodtype
 
 :css
+  .scoreboard-card {
+    mask-image: none !important;
+    -webkit-mask-image: none !important;
+    isolation: auto !important;
+  }
+  .scoreboard-table, .scoreboard-table tr, .scoreboard-table td, .scoreboard-table th {
+    transition: none !important;
+  }
   .scoreboard-table .vertical-text {
     writing-mode: vertical-rl;
     transform: rotate(180deg);
@@ -117,6 +133,5 @@
     padding: 5px;
   }
   .scoreboard-table .score-cell {
-    transition: background-color 0.3s ease;
     font-size: 0.9em;
   }

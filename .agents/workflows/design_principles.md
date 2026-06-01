@@ -1,5 +1,5 @@
 ---
-description: Learn project front-end styling by reading style files
+description: Learn project front-end styling by reading style files, and what steps need to do if there are some UX / UI changes.
 ---
 
 # Design Principles

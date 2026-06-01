@@ -11,7 +11,7 @@
         - elsif GraderConfiguration.time_limit_mode?
           - if @current_contest
             -# we have a contest
-            - if @current_contest.stop + @current_contest_user.extra_time_second < Time.zone.now
+            - if @current_contest.stop + (@current_contest_user&.extra_time_second || 0) < Time.zone.now
               -# contest is over
               %div.btn.btn-danger#countdown= "Contest is over"
             - elsif !@current_contest&.contest_status == :later
@@ -45,7 +45,7 @@
           / scoreboard
           - if GraderConfiguration['system.scoreboard_enabled']
             - level = GraderConfiguration['system.scoreboard_view_level'] || 'user'
-            - if level == 'all' || (level == 'user' && @current_user) || (level == 'admin' && @current_user&.admin?)
+            - if level == 'all' || level == 'public' || (level == 'user' && @current_user) || (level == 'admin' && (@current_user&.admin? || @current_user&.problem_setter?))
               %li.nav-item= link_to "Scoreboard", scoreboard_path, class: 'nav-link mx-2'+active_class_when(controller: :scoreboard)
           / admin section
           - if @current_user && (@current_user.admin? || @current_user.problem_setter? || @current_user.groups_for_action(:edit).any?)
@@ -109,7 +109,7 @@
             %li.nav-item
               %a.nav-link{href: messages_path, 'data-bs-toggle' => 'tooltip', title: 'Messages'}
                 %span.mi.md-18 chat
-          - if GraderConfiguration['system.user_setting_enabled']
+          - if GraderConfiguration['system.user_setting_enabled'] && @current_user
             %li.nav-item.d-flex.align-items-center
               %a.nav-link.link-flex{href: profile_users_path, 'data-user-id': @current_user.id}
                 %span.mi.md-18 settings
@@ -118,10 +118,16 @@
                 %span.mi.md-18{style: 'line-height: 1; color: inherit !important;'} stars
                 %span.fw-bold{style: 'line-height: 1; margin-right: 5px'}
                   = "Points: #{number_with_precision(@current_user.current_score, precision: 2, strip_insignificant_zeros: true)}"
-          %li.nav-item.d-flex.align-items-center
-            %a.nav-link.link-flex.gap-2{href: logout_main_path}
-              %span.mi.md-18 exit_to_app
-              = @current_user.full_name
+          - if @current_user
+            %li.nav-item.d-flex.align-items-center
+              %a.nav-link.link-flex.gap-2{href: logout_main_path}
+                %span.mi.md-18 exit_to_app
+                = @current_user.full_name
+          - else
+            %li.nav-item.d-flex.align-items-center
+              %a.nav-link.link-flex.gap-2{href: login_main_path}
+                %span.mi.md-18 exit_to_app
+                Login
 :javascript
   let server_time_offset_ms = 0
 
@@ -214,7 +220,7 @@
     if (!contestEndTime) return; // No contest end time to display
 
     const now = (new Date())
-    const extraTime = #{ @current_user.contests_users.where(contest: @current_contest).take&.extra_time_second || 0}
+    const extraTime = #{ @current_user&.contests_users&.where(contest: @current_contest)&.take&.extra_time_second || 0}
     const remainingTime = contestEndTime - now + server_time_offset_ms + (extraTime * 1000)
 
     if (remainingTime > 0) {
