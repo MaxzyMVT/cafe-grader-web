@@ -104,14 +104,14 @@ class ProblemImporter
           new_tc.group_name = group_name
         else
           @log << "add a testcase #{num} with codename #{codename} (num,weight,group,group_name are #{[num, weight, group, group_name].join ','})"
-          new_tc = Testcase.new(code_name: codename, num: num, group: group, weight: weight, group_name: group_name)
+          new_tc = Testcase.new(code_name: codename, num: num, group: group, weight: weight, group_name: group_name, dataset: @dataset)
           num +=1
         end
         input = File.read(@tc[codename][:input]).gsub(/\r$/, '')
         ans = File.read(@tc[codename][:sol]).gsub(/\r$/, '')
         new_tc.inp_file.attach(io: StringIO.new(input), filename: 'input.txt', content_type: 'text/plain',  identify: false)
         new_tc.ans_file.attach(io: StringIO.new(ans),   filename: 'answer.txt', content_type: 'text/plain',  identify: false)
-        @dataset.testcases << new_tc
+        new_tc.save!
         @log << "  #{@tc[codename][:input]} is the input"
         @log << "  #{@tc[codename][:sol]} is the sol"
       end
