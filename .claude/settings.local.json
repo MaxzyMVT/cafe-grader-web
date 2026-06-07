@@ -43,7 +43,9 @@
       "Bash(bin/rails db:migrate:status)",
       "Bash(bash -n deploy/backup/huawei-cbr-setup.sh)",
       "Bash(SERVER_IPS='' bash -c 'set -- 1.2.3.4 5.6.7.8; if [ \"$#\" -gt 0 ]; then S=\"$*\"; fi; echo \"args->[$S]\"; S2=\"\"; if [ -z \"${S2// /}\" ]; then echo \"empty-detected\"; fi')",
-      "Bash(bash -n deploy/backup/install.sh)"
+      "Bash(bash -n deploy/backup/install.sh)",
+      "PowerShell(Out-Null *)",
+      "Bash(bash -n deploy/backup/pull-backup.sh)"
     ]
   }
 }

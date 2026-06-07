@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+#
+# Cafe-Grader backup over SSH only - no cloud account needed.
+# Runs on an Ubuntu 22.04 control box. Needs only your RSA private key.
+#
+# It connects to each server as root, makes the backup THERE in /tmp, copies it
+# back to this machine with scp, then deletes the remote temp copy. Nothing is
+# installed on the servers.
+#
+#   web+db server  -> MySQL dump (grader + grader_queue) + config/ + storage/
+#   worker server  -> config/worker.yml + judge dir
+#
+# You PASTE the private key when asked (no file path). The key is written to a
+# temp file (chmod 600), used, then shredded on exit.
+#
+# Usage:
+#   ./pull-backup.sh                         # asks for hosts + key
+#   ./pull-backup.sh <web-db-ip>             # web+db only
+#   ./pull-backup.sh <web-db-ip> <w1> <w2>   # web+db + workers
+#   ./pull-backup.sh -h                      # this help
+#
+# Environment overrides:
+#   SSH_USER (root)  DEST_DIR (~/cafe-grader-backups)  KEEP_DAYS (14)
+#   DB_USER / DB_PASS  (only if mysqldump needs a login)
+#   SSH_KEY          (key CONTENTS, not a path - lets it run unattended for cron)
+
+set -euo pipefail
+
+case "${1:-}" in -h|--help) sed -n '3,28p' "$0" | sed 's/^#\s\?//'; exit 0;; esac
+
+# --- settings (override via env) --------------------------------------------
+SSH_USER="${SSH_USER:-root}"
+DEST_DIR="${DEST_DIR:-$HOME/cafe-grader-backups}"
+KEEP_DAYS="${KEEP_DAYS:-14}"
+DB_USER="${DB_USER:-}"
+DB_PASS="${DB_PASS:-}"
+
+# --- prerequisites -----------------------------------------------------------
+for t in ssh scp mktemp grep; do
+  command -v "$t" >/dev/null || { echo "Required tool not found: $t"; exit 1; }
+done
+
+# --- hosts: from args, else ask ---------------------------------------------
+WEB_DB_HOST="${WEB_DB_HOST:-}"
+WORKER_HOSTS="${WORKER_HOSTS:-}"
+if [ "$#" -ge 1 ]; then WEB_DB_HOST="$1"; shift; WORKER_HOSTS="${*:-$WORKER_HOSTS}"; fi
+[ -n "$WEB_DB_HOST" ] || read -rp "web+db server IP: " WEB_DB_HOST
+[ -n "$WEB_DB_HOST" ] || { echo "No web+db host given"; exit 1; }
+if [ -z "$WORKER_HOSTS" ]; then
+  read -rp "worker IPs (space-separated, blank if none): " WORKER_HOSTS || true
+fi
+
+# --- private key: PASTE it (or supply content via $SSH_KEY) ------------------
+KEYFILE="$(mktemp)"; chmod 600 "$KEYFILE"
+cleanup() { shred -u "$KEYFILE" 2>/dev/null || rm -f "$KEYFILE"; }
+trap cleanup EXIT
+if [ -n "${SSH_KEY:-}" ]; then
+  printf '%s\n' "$SSH_KEY" > "$KEYFILE"
+else
+  echo "Paste your PRIVATE key below. Finish with Enter, then Ctrl-D:"
+  cat > "$KEYFILE"
+fi
+grep -q 'PRIVATE KEY' "$KEYFILE" || { echo "That does not look like a private key. Aborting."; exit 1; }
+
+SSH=(ssh -i "$KEYFILE" -o StrictHostKeyChecking=accept-new -o BatchMode=yes)
+SCP=(scp -i "$KEYFILE" -o StrictHostKeyChecking=accept-new -o BatchMode=yes)
+
+# --- MySQL auth passed to the remote shell as environment (no string-templating) ---
+# (mysqldump reads MYSQL_PWD automatically; DBUSER_ARG is used explicitly below.)
+REMOTE_ENV=""
+[ -n "$DB_USER" ] && REMOTE_ENV+="DBUSER_ARG='-u$DB_USER' "
+[ -n "$DB_PASS" ] && REMOTE_ENV+="MYSQL_PWD='$DB_PASS' "
+
+# --- run a script on a host (via stdin); print its non-empty output lines -----
+run_remote() {  # run_remote <host> <script> [env-prefix]
+  printf '%s\n' "$2" | "${SSH[@]}" "$SSH_USER@$1" "${3:-}bash -s" | grep -v '^[[:space:]]*$' || true
+}
+
+# --- copy listed remote files back, then delete them on the server -----------
+fetch() {  # fetch <host> <localdir> <file>...
+  local h="$1" ld="$2"; shift 2
+  [ "$#" -gt 0 ] || return 0
+  mkdir -p "$ld"
+  local rf
+  for rf in "$@"; do
+    echo "    pull $(basename "$rf")"
+    "${SCP[@]}" "$SSH_USER@$h:$rf" "$ld/"
+  done
+  "${SSH[@]}" "$SSH_USER@$h" "rm -f $*" >/dev/null 2>&1 || true
+}
+
+# ============================== WEB + DB =====================================
+echo "==> web+db : $WEB_DB_HOST"
+read -r -d '' WEB_SCRIPT <<'REMOTE' || true
+set -eo pipefail
+TS=$(date +%F_%H%M%S)
+OUT=/tmp/cafebk; mkdir -p "$OUT"
+DB="$OUT/db_$TS.sql.gz"
+mysqldump ${DBUSER_ARG:-} --single-transaction --quick --routines --triggers --events --databases grader grader_queue | gzip > "$DB"
+[ -s "$DB" ] && echo "$DB"
+APP=""
+for d in /home/*/cafe-grader-web /var/www/cafe-grader-web /opt/cafe-grader-web /root/cafe-grader-web; do
+  [ -d "$d" ] && { APP="$d"; break; }
+done
+if [ -n "$APP" ]; then
+  F="$OUT/files_$TS.tar.gz"
+  tar -C "$APP" --ignore-failed-read -czf "$F" config storage 2>/dev/null || true
+  [ -s "$F" ] && echo "$F"
+fi
+REMOTE
+
+mapfile -t webfiles < <(run_remote "$WEB_DB_HOST" "$WEB_SCRIPT" "$REMOTE_ENV")
+[ "${#webfiles[@]}" -gt 0 ] || { echo "ERROR: web+db produced no backup (mysqldump may need DB_USER/DB_PASS)"; exit 1; }
+fetch "$WEB_DB_HOST" "$DEST_DIR/web-db" "${webfiles[@]}"
+
+# ============================== WORKERS ======================================
+read -r -d '' WORKER_SCRIPT <<'REMOTE' || true
+set -eo pipefail
+TS=$(date +%F_%H%M%S)
+OUT=/tmp/cafebk; mkdir -p "$OUT"
+APP=""
+for d in /home/*/cafe-grader-web /var/www/cafe-grader-web /opt/cafe-grader-web /root/cafe-grader-web; do
+  [ -d "$d" ] && { APP="$d"; break; }
+done
+if [ -n "$APP" ]; then
+  W="$OUT/worker_$TS.tar.gz"
+  tar -C "$APP" --ignore-failed-read -czf "$W" config/worker.yml 2>/dev/null || true
+  [ -s "$W" ] && echo "$W"
+  if [ -d "$APP/../judge" ]; then
+    J="$OUT/judge_$TS.tar.gz"
+    tar -C "$APP/.." --ignore-failed-read --exclude=judge/raw --exclude=judge/tmp -czf "$J" judge 2>/dev/null || true
+    [ -s "$J" ] && echo "$J"
+  fi
+fi
+REMOTE
+
+for w in $WORKER_HOSTS; do
+  echo "==> worker : $w"
+  mapfile -t wf < <(run_remote "$w" "$WORKER_SCRIPT")
+  if [ "${#wf[@]}" -gt 0 ]; then fetch "$w" "$DEST_DIR/$w" "${wf[@]}"
+  else echo "    (nothing to back up - app dir not found on $w)"; fi
+done
+
+# ============================== RETENTION ====================================
+if [ -d "$DEST_DIR" ]; then
+  find "$DEST_DIR" -type f -name '*.gz' -mtime "+$KEEP_DAYS" -print -delete 2>/dev/null \
+    | sed 's/^/    prune /' || true
+fi
+
+echo
+echo "DONE. Backups saved under: $DEST_DIR"
