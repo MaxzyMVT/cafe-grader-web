@@ -32,7 +32,8 @@
   function tag_render(data, type, row, meta) {
     if (type == 'data' || type == 'display') {
       if (row['color']) {
-        return `<div class="badge" style="background-color: ${row['color']}; color: #fff;">${data}</div>`
+        const text_color = cafe.getContrastColor(row['color']);
+        return `<div class="badge" style="background-color: ${row['color']}; color: ${text_color};">${data}</div>`
       } else {
         return `<div class="badge text-bg-secondary">${data}</div>`
       }

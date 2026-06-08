@@ -106,7 +106,8 @@
         return data.map(t => {
           const color = t.color || '#6C757D';
           const name = cafe.escapeHtml(t.name);
-          return `<span class="badge" style="background-color: ${color}; color: #fff;">${name}</span>`;
+          const text_color = cafe.getContrastColor(color);
+          return `<span class="badge" style="background-color: ${color}; color: ${text_color};">${name}</span>`;
         }).join(' ');
       }
 

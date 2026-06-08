@@ -372,4 +372,24 @@ TITLEBAR
       value.to_s # Default: convert to string (will be safely escaped)
     end
   end
+
+  def contrast_text_color(hex_color)
+    return '#ffffff' if hex_color.blank?
+    hex = hex_color.to_s.gsub('#', '')
+    return '#ffffff' unless hex =~ /\A[0-9a-fA-F]{6}\z/ || hex =~ /\A[0-9a-fA-F]{3}\z/
+    
+    if hex.length == 3
+      r = (hex[0] * 2).hex
+      g = (hex[1] * 2).hex
+      b = (hex[2] * 2).hex
+    else
+      r = hex[0..1].hex
+      g = hex[2..3].hex
+      b = hex[4..5].hex
+    end
+    
+    yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000
+    yiq >= 150 ? '#212529' : '#ffffff'
+  end
 end
+

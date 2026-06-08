@@ -91,4 +91,19 @@ function escapeHtml(str) {
   return div.innerHTML
 }
 
-export { config, msi, initSelect2, escapeHtml }
+function getContrastColor(hexColor) {
+  if (!hexColor) return '#ffffff';
+  let hex = hexColor.toString().replace('#', '');
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+  if (hex.length !== 6) return '#ffffff';
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+  return yiq >= 150 ? '#212529' : '#ffffff';
+}
+
+export { config, msi, initSelect2, escapeHtml, getContrastColor }
+

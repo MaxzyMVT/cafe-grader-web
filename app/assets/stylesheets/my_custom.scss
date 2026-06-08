@@ -621,6 +621,6 @@ golden-btn + .golden-btn { margin-top: 1em; }
   &:hover, &.active {
     background-color: var(--tag-color) !important;
     border-color: var(--tag-color) !important;
-    color: #fff !important;
+    color: var(--tag-text-color, #fff) !important;
   }
 }

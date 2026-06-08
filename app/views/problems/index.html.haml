@@ -72,7 +72,7 @@
                 = problem.ms_count
             %td
               - problem.tags.each do |t|
-                %span.badge{style: "background-color: #{t.color}; color: #fff;"}= t.name
+                %span.badge{style: "background-color: #{t.color}; color: #{contrast_text_color(t.color)};"}= t.name
             %td.py-1.align-middle= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
             %td.text-center
               - if problem.submission_limit?

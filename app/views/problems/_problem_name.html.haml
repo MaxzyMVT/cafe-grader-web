@@ -45,4 +45,4 @@
     - if tag.color.blank?
       %span.badge.text-bg-secondary{data: data_hash}= tag.name
     - else
-      %span.badge{style: "background-color: #{tag.color}", data: data_hash}= tag.name
+      %span.badge{style: "background-color: #{tag.color}; color: #{contrast_text_color(tag.color)};", data: data_hash}= tag.name

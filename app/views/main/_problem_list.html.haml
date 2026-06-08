@@ -11,7 +11,7 @@
         .col.d-flex.flex-wrap.align-items-center.gap-2
           - @primary_tags.each do |tag|
             - data_hash = { action: 'click->main#setActiveTopic',  bs: tag.description.present? ?  { toggle: 'tooltip', title: tag.description } : nil }
-            - tag_style = "border-color: #{tag.color}; color: #{tag.color}; --tag-color: #{tag.color};"
+            - tag_style = "border-color: #{tag.color}; color: #{tag.color}; --tag-color: #{tag.color}; --tag-text-color: #{contrast_text_color(tag.color)};"
             %span.btn.btn-outline-secondary.btn-sm.rounded-pill.topic-badge{data: data_hash, style: tag_style}= tag.name
     .table-responsive
       %table#main_table.table.table-hover.align-middle{width: '100%'}
