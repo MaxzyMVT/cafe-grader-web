@@ -80,6 +80,11 @@
                     Answer Text
                     %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'The content that will be saved into the .sol file'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
                   %textarea.form-control{name: 'answer_text', form: 'quick_testcase_form', rows: 3, placeholder: 'Answer content...'}
+                .col-md-12
+                  %label.form-label.d-flex.align-items-center.gap-1.mb-1
+                    Target Dataset
+                    %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'The dataset this testcase will be added to'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
+                  = select_tag 'dataset_id', options_from_collection_for_select(problem.datasets, :id, ->(ds) { ds.name + (ds == problem.live_dataset ? " (Live)" : "") }, problem.live_dataset&.id), form: 'quick_testcase_form', class: 'form-select'
                 .col-md-6
                   %label.form-label.d-flex.align-items-center.gap-1.mb-1
                     Codename

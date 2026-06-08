@@ -460,7 +460,10 @@ class ProblemsController < ApplicationController
   end
 
   def quick_add_testcase
-    dataset = @problem.live_dataset || @problem.datasets.first
+    if params[:dataset_id].present?
+      dataset = @problem.datasets.find_by(id: params[:dataset_id])
+    end
+    dataset ||= @problem.live_dataset || @problem.datasets.first
     unless dataset
       dataset = @problem.datasets.create(name: @problem.get_next_dataset_name)
       @problem.update(live_dataset: dataset)
