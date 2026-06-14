@@ -24,4 +24,17 @@ class Testcase < ApplicationRecord
   def get_weight
     return score
   end
+
+  def self.set_testcase_num(testcase, number)
+    dataset = testcase.dataset
+    num = 1
+    AuditLog.paused do
+      dataset.testcases.where.not(id: testcase.id).order(:group, :num, :id).each do |tc|
+        offset = (num >= number) ? 1 : 0
+        tc.update(num: num + offset)
+        num += 1
+      end
+      testcase.update(num: [dataset.testcases.count, [1, number.round].max].min)
+    end
+  end
 end
