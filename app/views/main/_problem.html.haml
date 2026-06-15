@@ -24,7 +24,7 @@
   - score = @prob_submissions[problem.id][:max_score] || 0
   - full_score = problem.effective_full_score
   - raw_sum_mode = problem.live_dataset&.st_raw_sum?
-  - cc = score >= full_score ? 'bg-success' : 'bg-warning text-dark'
+  - cc = score.to_f.abs >= full_score.to_f.abs ? 'bg-success' : 'bg-warning text-dark'
   %td{style: "width: 10rem; min-width: 10rem; vertical-align: middle", 'data-order': score || 0}
     - if raw_sum_mode
       %span.fw-semibold
@@ -36,21 +36,27 @@
       - sum_cost = [full_score, hint_cost + ai_cost].min
       - ai_count = @prob_submissions[problem.id][:ai_assist_count]
       - text << "AI Assist: #{ai_count}" if ai_count
-      -# display progress bar
-      - adjusted_score = [full_score - sum_cost, score].min
-      - pct_adj = (adjusted_score / full_score.to_f) * 100
-      - extra_points = [0, score - adjusted_score].max
-      - pct_extra = (extra_points / full_score.to_f) * 100
-      - deduction_rem = [0, sum_cost - extra_points].max
-      - pct_deduct_rem = (deduction_rem / full_score.to_f) * 100
+      -# display progress bar using absolute values to support negative full scores
+      - score_sign = full_score < 0 ? -1 : 1
+      - abs_full_score = full_score.to_f.abs
+      - abs_score = score.to_f.abs
+      - abs_hint_cost = hint_cost.to_f.abs
+      - abs_ai_cost = ai_cost.to_f.abs
+      - abs_sum_cost = [abs_full_score, abs_hint_cost + abs_ai_cost].min
+      - abs_adjusted_score = [abs_full_score - abs_sum_cost, abs_score].min
+      - pct_adj = abs_full_score > 0 ? (abs_adjusted_score / abs_full_score) * 100 : 0
+      - abs_extra_points = [0, abs_score - abs_adjusted_score].max
+      - pct_extra = abs_full_score > 0 ? (abs_extra_points / abs_full_score) * 100 : 0
+      - abs_deduction_rem = [0, abs_sum_cost - abs_extra_points].max
+      - pct_deduct_rem = abs_full_score > 0 ? (abs_deduction_rem / abs_full_score) * 100 : 0
       
       .progress.rounded-pill.bg-secondary-subtle{style: 'height: 0.85rem;'}
         - if pct_adj > 0
           .progress-bar{style: "width: #{pct_adj}%", class: cc}
-            = number_with_precision adjusted_score, precision: 2, strip_insignificant_zeros: true
+            = number_with_precision abs_adjusted_score * score_sign, precision: 2, strip_insignificant_zeros: true
         - if pct_extra > 0
           .progress-bar.bg-danger{style: "width: #{pct_extra}%", 'data-bs-toggle' => 'tooltip', title: 'Points lost due to hint cap'}
-            = number_with_precision extra_points, precision: 2, strip_insignificant_zeros: true
+            = number_with_precision abs_extra_points * score_sign, precision: 2, strip_insignificant_zeros: true
         -# spacer
         .progress-bar.bg-transparent{style: "width: #{[0, 100 - pct_adj - pct_extra - pct_deduct_rem].max}%"}
         - if pct_deduct_rem > 0

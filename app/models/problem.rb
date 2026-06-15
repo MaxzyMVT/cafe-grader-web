@@ -68,9 +68,9 @@ class Problem < ApplicationRecord
   def effective_full_score
     if live_dataset&.st_raw_sum?
       count = live_dataset.testcases.count
-      count > 0 ? count : (full_score || 100)
+      count > 0 ? count : (full_score || 0)
     else
-      full_score || 100
+      full_score || 0
     end
   end
 
