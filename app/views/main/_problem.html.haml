@@ -26,10 +26,7 @@
   - raw_sum_mode = problem.live_dataset&.st_raw_sum?
   - cc = score.to_f.abs >= full_score.to_f.abs ? 'bg-success' : 'bg-warning text-dark'
   %td{style: "width: 10rem; min-width: 10rem; vertical-align: middle", 'data-order': score || 0}
-    - if raw_sum_mode
-      %span.fw-semibold
-        = number_with_precision score, precision: 2, strip_insignificant_zeros: true
-    - else
+    - unless false
       - text = []
       - hint_cost = @prob_submissions[problem.id][:hint_cost] || 0
       - ai_cost = @prob_submissions[problem.id][:ai_assist_cost] || 0
