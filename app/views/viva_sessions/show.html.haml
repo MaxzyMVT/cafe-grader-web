@@ -31,7 +31,8 @@
         - if @submission.points
           .row.mb-2
             .col-5.text-end.text-secondary Points
-            .col= "#{@submission.points}/100"
+            - full_score = @submission.problem&.full_score || 100
+            .col= "#{number_with_precision(@submission.points, precision: 2, strip_insignificant_zeros: true)}/#{number_with_precision(full_score, precision: 2, strip_insignificant_zeros: true)}"
         - if @submission.viva_archived?
           .row.mb-2
             .col-5.text-end.text-secondary Archived

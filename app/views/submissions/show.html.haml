@@ -76,7 +76,8 @@
               - elsif live_dataset&.st_raw_sum?
                 = @submission.points
               - else
-                = "#{@submission.points}/100"
+                - full_score = @submission.problem&.full_score || 100
+                = "#{number_with_precision(@submission.points, precision: 2, strip_insignificant_zeros: true)}/#{number_with_precision(full_score, precision: 2, strip_insignificant_zeros: true)}"
           .row.mb-2
             .col-4.text-end.text-secondary
               Result
