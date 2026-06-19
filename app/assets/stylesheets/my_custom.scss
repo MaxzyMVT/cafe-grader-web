@@ -183,6 +183,11 @@ pre code {
   }
 }
 
+.card-text {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 
 
 // --------------- below here are legacy from aj.Jittat ---------------
