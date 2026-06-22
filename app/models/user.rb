@@ -6,7 +6,7 @@ require 'json'
 require 'argon2'
 
 class User < ApplicationRecord
-  THEMES = %w[default dark premium ocean solarized].freeze
+  THEMES = %w[default dark premium ocean solarized space_gooners].freeze
 
   has_and_belongs_to_many :roles
 

@@ -4,7 +4,7 @@
     = simple_form_for @current_user, url: update_self_users_path, html: { id: 'user-settings-form' } do |f|
       = f.association :default_language, collection: Language.all, include_blank: '-- No default language --'.html_safe
       - if GraderConfiguration['system.theme_selector_enabled']
-        = f.input :theme, collection: User::THEMES.map { |t| [t.capitalize, t] }, include_blank: false, label: 'UI Theme', hint: 'Choose your preferred visual theme for the grader interface.'
+        = f.input :theme, collection: User::THEMES.map { |t| [t.titleize, t] }, include_blank: false, label: 'UI Theme', hint: 'Choose your preferred visual theme for the grader interface.'
       = f.input :password
       = f.input :password_confirmation
       = f.button :submit, class: 'btn btn-primary'
@@ -44,6 +44,11 @@
                 %small.fw-bold Solarized
                 %br
                 %small.text-muted Warm Paper
+              - when 'space_gooners'
+                %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #0A0A1A, #6C63E8, #FAC765); border: 1px solid #1E1B3A;'}
+                %small.fw-bold Space Gooners
+                %br
+                %small.text-muted Void & Stars
             - if is_active
               .card-footer.bg-primary.text-white.text-center.py-1.border-0
                 %small.fw-bold Active
