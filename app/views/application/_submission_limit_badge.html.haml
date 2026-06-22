@@ -1,15 +1,16 @@
 - if problem.submission_limit? && user
   - is_exempt = user.admin? || user.problem_setter?
-  - limit_reached = !is_exempt && problem.submission_limit_reached?(user)
-  - remaining = is_exempt ? nil : problem.submissions_remaining_for(user)
+  - limit_reached = !is_exempt && problem.submission_limit_reached?(user, @current_contest)
+  - remaining = is_exempt ? nil : problem.submissions_remaining_for(user, @current_contest)
+  - current_max = problem.max_submissions_for(user, @current_contest)
   - if is_exempt
     %span.badge.rounded-pill.d-inline-flex.align-items-center.gap-1.bg-success-subtle.text-success.border.border-success-subtle{'data-bs-toggle' => 'tooltip', title: 'Exempt from limit (You can submit indefinitely)'}
       %span.mi{style: 'font-size: 0.85rem;'} upload
-      = "Submission limit: #{problem.max_submissions} (Exempt)"
+      = "Submission limit: #{current_max} (Exempt)"
   - else
     %span.badge.rounded-pill.d-inline-flex.align-items-center.gap-1{class: (limit_reached ? 'badge-limit-danger' : 'badge-limit-info')}
       %span.mi{style: 'font-size: 0.85rem;'} upload
       - if limit_reached
-        Submission limit reached (#{problem.max_submissions}/#{problem.max_submissions})
+        Submission limit reached (#{current_max}/#{current_max})
       - else
-        = "#{remaining} of #{problem.max_submissions} submission#{'s' unless problem.max_submissions == 1} remaining"
+        = "#{remaining} of #{current_max} submission#{'s' unless current_max == 1} remaining"

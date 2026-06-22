@@ -59,8 +59,8 @@ class MainController < ApplicationController
     end
 
     # check submission limit
-    if problem.submission_limit_reached?(@current_user)
-      redirect_to list_main_path, alert: "Submission limit reached: this problem allows a maximum of #{problem.max_submissions} submissions" and return
+    if problem.submission_limit_reached?(@current_user, @current_contest)
+      redirect_to list_main_path, alert: "Submission limit reached: this problem allows a maximum of #{problem.max_submissions_for(@current_user, @current_contest)} submissions" and return
     end
 
     # set language

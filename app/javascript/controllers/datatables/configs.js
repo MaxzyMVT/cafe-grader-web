@@ -121,10 +121,11 @@ export const configs = {
       { data: 'seat' },
       { data: 'remark' },
       { data: null, render: renderers.startStopOffsetRender, title: 'Extra Time' },
+      { data: null, render: renderers.extraSubLimitRender, title: 'Extra Limit' },
       { data: 'user_id', render: cafe.dt.render.button(null, { element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled' }), title: 'Enabled' },
       { data: null, render: renderers.userActionRenderer, title: 'Actions', class: 'py-1' },
     ],
-    columnDefs: [{ orderable: false, targets: [4, 5, 6] }],
+    columnDefs: [{ orderable: false, targets: [4, 5, 6, 7] }],
     drawCallback: function (settings) {
       var api = this.api();
       api.columns.adjust()

@@ -244,19 +244,33 @@ class Problem < ApplicationRecord
     submissions.where(user: user).count
   end
 
+  def extra_submission_limit_for(user, contest)
+    return 0 unless user && contest
+    cu = ContestUser.find_by(user_id: user.id, contest_id: contest.id)
+    cu ? (cu.extra_sub_limit || 0) : 0
+  end
+
+  def max_submissions_for(user, contest = nil)
+    limit = max_submissions || 0
+    if contest
+      limit += extra_submission_limit_for(user, contest)
+    end
+    limit
+  end
+
   # Returns how many submissions remain for the user, or nil if unlimited
-  def submissions_remaining_for(user)
+  def submissions_remaining_for(user, contest = nil)
     return nil if user&.admin? || user&.problem_setter?
     return nil unless submission_limit?
-    [max_submissions - submission_count_for(user), 0].max
+    [max_submissions_for(user, contest) - submission_count_for(user), 0].max
   end
 
   # Returns true if the user has reached the submission limit
   # Admins and problem setters are never subject to submission limits
-  def submission_limit_reached?(user)
+  def submission_limit_reached?(user, contest = nil)
     return false if user&.admin? || user&.problem_setter?
     return false unless submission_limit?
-    submission_count_for(user) >= max_submissions
+    submission_count_for(user) >= max_submissions_for(user, contest)
   end
 
   def viva_grounding_tags

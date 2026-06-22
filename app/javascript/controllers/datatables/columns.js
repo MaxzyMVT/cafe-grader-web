@@ -18,6 +18,13 @@ export const renderers = {
       `<span class="mi md-18 mx-1">edit</span></a>` +
       `<span>`
   },
+  extraSubLimitRender: (data, type, row, meta) => {
+    const extra_limit = row['extra_sub_limit'] || 0
+    return `<span class="d-inline-flex align-items-center">${extra_limit} ` +
+      `<a class="d-inline-flex align-items-center text-decoration-none" href='#' data-row-id="${row['id']}" data-login="${row['login']}" data-extra-limit="${extra_limit}" data-action="click->contest#showExtraSubLimitDialog">` +
+      `<span class="mi md-18 mx-1">edit</span></a>` +
+      `<span>`
+  },
   userActionRenderer: (data, type, row, meta) => {
     // only render for display
     if (type != 'display') return ''

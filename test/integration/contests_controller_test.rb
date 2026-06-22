@@ -126,4 +126,25 @@ class ContestsControllerTest < ActionDispatch::IntegrationTest
     post user_check_in_contests_path
     assert_response :success
   end
+
+  test "admin can add problems by tag" do
+    sign_in_as("admin", "admin")
+    contest = contests(:contest_a)
+    tag = tags(:tag_hard)
+
+    assert_difference "contest.problems.count", 1 do
+      post add_problem_by_tag_contest_path(contest), params: { tag_ids: [tag.id] }, as: :turbo_stream
+    end
+    assert_response :success
+  end
+
+  test "admin can set user extra submission limit" do
+    sign_in_as("admin", "admin")
+    contest = contests(:contest_a)
+    contest_user = contests_users(:james_in_contest_a)
+
+    post extra_sub_limit_user_contest_path(contest), params: { row_id: contest_user.id, extra_sub_limit: 5 }, as: :turbo_stream
+    assert_response :success
+    assert_equal 5, contest_user.reload.extra_sub_limit
+  end
 end

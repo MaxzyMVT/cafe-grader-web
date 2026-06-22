@@ -5,7 +5,8 @@ export default class extends Controller {
   static targets = ["usersCommand", "userForm", "userFormUserID", "userFormCommand",
     "problemsCommand", "problemForm", "problemFormProblemID", "problemFormCommand",
     "contestForm", "contestFormContestID", "contestFormCommand",
-    "userExtraTimeForm", "userExtraTimeFormStart", "userExtraTimeFormEnd", "userExtraTimeFormRowID"
+    "userExtraTimeForm", "userExtraTimeFormStart", "userExtraTimeFormEnd", "userExtraTimeFormRowID",
+    "userExtraSubLimitForm", "userExtraSubLimitFormLimit", "userExtraSubLimitFormRowID"
   ]
 
   connect() {
@@ -130,5 +131,40 @@ export default class extends Controller {
       }
     })
 
+  }
+
+  showExtraSubLimitDialog(event) {
+    const form = this.userExtraSubLimitFormTarget
+    const limit = this.userExtraSubLimitFormLimitTarget
+    const user = this.userExtraSubLimitFormRowIDTarget
+
+    const user_id = event.currentTarget.dataset.rowId
+    const currentExtraLimit = event.currentTarget.dataset.extraLimit || 0
+    user.value = user_id
+
+    event.preventDefault()
+
+    bootbox.dialog({
+      title: `Set extra submission limit for ${event.currentTarget.dataset.login}`,
+      message: `
+        <div class="form-group">
+          <label for="extra-limit-input">Extra Submission Limit</label>
+          <input type="number" class="form-control" id="extra-limit-input" value="${currentExtraLimit}">
+        </div> `,
+      buttons: {
+        cancel: {
+          label: 'Cancel',
+          className: 'btn-secondary'
+        },
+        ok: {
+          label: 'OK',
+          className: 'btn-primary',
+          callback: function () {
+            limit.value = $('#extra-limit-input').val()
+            form.requestSubmit()
+          }
+        }
+      }
+    })
   }
 }

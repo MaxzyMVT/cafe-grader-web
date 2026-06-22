@@ -1,12 +1,13 @@
-- limit_reached = problem.submission_limit_reached?(user)
-- submissions_remaining = problem.submissions_remaining_for(user)
+- limit_reached = problem.submission_limit_reached?(user, @current_contest)
+- submissions_remaining = problem.submissions_remaining_for(user, @current_contest)
+- current_max = problem.max_submissions_for(user, @current_contest)
 - if limit_reached
   -# Submission limit reached alert
   .alert.alert-danger.mb-3.d-flex.align-items-center.gap-2
     %span.mi{style: 'font-size: 1.5rem;'} block
     %div
       %strong Submission limit reached.
-      You have used all #{problem.max_submissions} allowed submission#{'s' unless problem.max_submissions == 1} for this problem. You may still view your previous submissions.
+      You have used all #{current_max} allowed submission#{'s' unless current_max == 1} for this problem. You may still view your previous submissions.
 - else
   -# Form for submit & Language select
   .alert.mb-3{class: (as_binary ? 'alert-warning' : 'alert-info')}
@@ -26,7 +27,7 @@
       - if problem.submission_limit?
         .text-muted.mt-1
           %span.mi{style: 'font-size: 0.9rem; vertical-align: middle;'} info
-          = "#{submissions_remaining} submission#{'s' unless submissions_remaining == 1} remaining out of #{problem.max_submissions}."
+          = "#{submissions_remaining} submission#{'s' unless submissions_remaining == 1} remaining out of #{current_max}."
     = form_with url: submit_main_path, :multipart => true, class: 'row row-cols-lg-auto g-3 align-items-center', data: {action: 'editor#submit'} do |form|
       = hidden_field_tag 'editor_text', '', data: {editor_target: 'submitSource'}
       = hidden_field_tag 'submission[problem_id]', problem.id

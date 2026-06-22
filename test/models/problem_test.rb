@@ -101,4 +101,24 @@ class ProblemTest < ActiveSupport::TestCase
     prob = problems(:prob_add)
     assert prob.submissions.count > 0
   end
+
+  test "submission limit methods factor in extra_sub_limit from contest" do
+    prob = problems(:prob_add)
+    prob.update!(max_submissions: 3)
+
+    user = users(:james)
+    contest = contests(:contest_a)
+    contest_user = contests_users(:james_in_contest_a)
+
+    # Initially extra_sub_limit is 0, so max submissions is 3
+    assert_equal 3, prob.max_submissions_for(user, contest)
+    
+    # Set extra limit to 2
+    contest_user.update!(extra_sub_limit: 2)
+    assert_equal 5, prob.max_submissions_for(user, contest)
+
+    current_count = prob.submission_count_for(user)
+    assert_equal (5 - current_count), prob.submissions_remaining_for(user, contest)
+    assert_not prob.submission_limit_reached?(user, contest)
+  end
 end

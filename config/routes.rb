@@ -74,11 +74,13 @@ Rails.application.routes.draw do
       post 'do_all_users'
       post 'do_user'
       post 'extra_time_user'
+      post 'extra_sub_limit_user'
 
       # contests_problems
       post 'show_problems_query'
       post 'add_problem'
       post 'add_problem_by_group'
+      post 'add_problem_by_tag'
       post 'do_all_problems'
       post 'do_problem'
     end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_01_191734) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_22_174448) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -141,6 +141,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_01_191734) do
     t.boolean "enabled", default: true
     t.datetime "last_heartbeat"
     t.integer "role", default: 0
+    t.integer "extra_sub_limit", default: 0
     t.index ["contest_id"], name: "index_contests_users_on_contest_id"
     t.index ["user_id"], name: "index_contests_users_on_user_id"
   end

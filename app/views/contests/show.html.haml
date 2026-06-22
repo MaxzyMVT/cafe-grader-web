@@ -14,6 +14,11 @@
       = f.hidden_field :start_offset, 'data-contest-target': 'userExtraTimeFormStart'
       = f.hidden_field :end_offset, 'data-contest-target': 'userExtraTimeFormEnd'
 
+    = form_with url: extra_sub_limit_user_contest_path, html: {'data-contest-target': 'userExtraSubLimitForm', id: 'extra-sub-limit-user-form',
+      data: {turbo: true}} do |f|
+      = f.hidden_field :row_id, 'data-contest-target': 'userExtraSubLimitFormRowID'
+      = f.hidden_field :extra_sub_limit, 'data-contest-target': 'userExtraSubLimitFormLimit'
+
     = form_with url: do_problem_contest_path, html: {'data-contest-target': 'problemForm',
       data: {turbo: true}} do |f|
       = f.hidden_field :problem_id, 'data-contest-target': 'problemFormProblemID'
@@ -191,6 +196,7 @@
                     %th Seat
                     %th Contest Remark
                     %th Extra Time
+                    %th Extra Limit
                     %th.text-center Enabled
                     %th.text-center Actions
             -# ==========================================
@@ -230,6 +236,16 @@
                                 =select_tag :problem_group_ids, options_from_collection_for_select(@current_user.groups_for_action(:edit),'id','name'), 
                                   class: 'select2', multiple: true, style: 'width: 100%',
                                   data: {placeholder: 'Add all problems from groups...'}
+                              =submit_tag "Add", class: 'btn btn-primary px-3 shadow-sm'
+
+                        .col-12
+                          =form_tag add_problem_by_tag_contest_path(@contest), class: 'tag-add-form',
+                            data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd'} do
+                            .d-flex.gap-2.align-items-center
+                              .flex-grow-1
+                                =select_tag :tag_ids, options_from_collection_for_select(Tag.order(:name), 'id', 'name'), 
+                                  class: 'select2', multiple: true, style: 'width: 100%',
+                                  data: {placeholder: 'Add all from tags...'}
                               =submit_tag "Add", class: 'btn btn-primary px-3 shadow-sm'
 
                 .col-md-6
