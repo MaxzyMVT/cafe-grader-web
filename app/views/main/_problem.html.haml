@@ -25,10 +25,10 @@
   - full_score = problem.effective_full_score
   - raw_sum_mode = problem.live_dataset&.st_raw_sum?
   - is_zero_full_score_pass = false
-  - if full_score == 0 && (last_sub = @prob_submissions[problem.id][:submission])
-    - gc = last_sub.grader_comment.to_s
+  - if full_score == 0 && (best_sub = @prob_submissions[problem.id][:best_submission])
+    - gc = best_sub.grader_comment.to_s
     - tc_count = problem.live_dataset&.testcases&.count || 0
-    - if last_sub.status.to_s == 'done'
+    - if best_sub.status.to_s == 'done'
       - if tc_count == 0
         - is_zero_full_score_pass = true
       - elsif gc.length == tc_count && gc.match?(/\A[PsS]+\z/)

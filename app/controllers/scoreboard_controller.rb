@@ -46,6 +46,35 @@ class ScoreboardController < ApplicationController
     report_records.each do |record|
       @scores[record.user_id][record.problem_id] = record.max_score.to_f
     end
+
+    # For 0-score problems, we check if there's any submission that passes all test cases (highest score = 0)
+    @zero_score_passes = Hash.new { |h, k| h[k] = {} }
+    zero_score_problems = @problems.select { |p| p.effective_full_score == 0 }
+    if zero_score_problems.any?
+      zero_subs = Submission.where(user: @users, problem: zero_score_problems, viva_archived_at: nil)
+      zero_subs.group_by { |s| [s.user_id, s.problem_id] }.each do |(user_id, problem_id), subs|
+        prob = zero_score_problems.find { |p| p.id == problem_id }
+        next unless prob
+        tc_count = prob.live_dataset&.testcases&.count || 0
+        has_pass = subs.any? do |s|
+          if s.status.to_s == 'done'
+            gc = s.grader_comment.to_s
+            if tc_count == 0
+              true
+            elsif gc.length == tc_count && gc.match?(/\A[PsS]+\z/)
+              true
+            else
+              false
+            end
+          else
+            false
+          end
+        end
+        if has_pass
+          @zero_score_passes[user_id][problem_id] = true
+        end
+      end
+    end
     
     # Total deductions per user (all reveals for available problems)
     # 1. Problem hints

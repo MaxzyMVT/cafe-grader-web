@@ -67,7 +67,8 @@
                         - if user_associated_with_problem?(entry[:user].id, p.id)
                           - score = @scores[entry[:user].id][p.id] || 0
                           - full_score = p.effective_full_score || 100
-                          - pct = (full_score > 0) ? (score / full_score.to_f).clamp(0, 1) : 0
+                          - is_zero_pass = (full_score == 0 && @zero_score_passes[entry[:user].id] && @zero_score_passes[entry[:user].id][p.id])
+                          - pct = is_zero_pass ? 1.0 : ((full_score > 0) ? (score / full_score.to_f).clamp(0, 1) : 0)
                           %td.text-center.score-cell{style: "background-color: color-mix(in srgb, var(--color-success-bg) #{pct * 100}%, transparent);"}
                             - if @scores[entry[:user].id].has_key?(p.id)
                               %div.d-flex.align-items-center.justify-content-center.gap-1
@@ -111,7 +112,8 @@
                           - if user_associated_with_problem?(m[:user].id, p.id)
                             - score = @scores[m[:user].id][p.id] || 0
                             - full_score = p.effective_full_score || 100
-                            - pct = (full_score > 0) ? (score / full_score.to_f).clamp(0, 1) : 0
+                            - is_zero_pass = (full_score == 0 && @zero_score_passes[m[:user].id] && @zero_score_passes[m[:user].id][p.id])
+                            - pct = is_zero_pass ? 1.0 : ((full_score > 0) ? (score / full_score.to_f).clamp(0, 1) : 0)
                             %td.text-center.score-cell{style: "background-color: color-mix(in srgb, var(--color-success-bg) #{pct * 100}%, transparent);"}
                               - if @scores[m[:user].id].has_key?(p.id)
                                 %div.d-flex.align-items-center.justify-content-center.gap-1

@@ -192,10 +192,35 @@ class MainController < ApplicationController
     # shouldn't gate the "Start Viva" button for the same user-problem.
     # Non-viva submissions always have viva_archived_at = nil, so this is
     # a no-op for them.
-    @prob_submissions = Hash.new { |h, k| h[k] = {count: 0, submission: nil} }
+    @prob_submissions = Hash.new { |h, k| h[k] = {count: 0, submission: nil, best_submission: nil} }
     last_sub_ids = submissions.where(viva_archived_at: nil).group(:problem_id).pluck('max(id)')
     Submission.where(id: last_sub_ids).each do |sub|
-      @prob_submissions[sub.problem_id] = { count: sub.number, submission: sub }
+      @prob_submissions[sub.problem_id] = { count: sub.number, submission: sub, best_submission: nil }
+    end
+
+    # calculate best submission (highest score, or for 0-score problems the one passing all testcases)
+    submissions.where(viva_archived_at: nil).group_by(&:problem_id).each do |prob_id, prob_subs|
+      prob = @problems.find { |p| p.id == prob_id }
+      next unless prob
+      max_pts = prob_subs.map { |s| s.points || 0 }.max || 0
+      candidates = prob_subs.select { |s| (s.points || 0) == max_pts }
+      tc_count = prob.live_dataset&.testcases&.count || 0
+      full_pass_candidates = candidates.select do |s|
+        if s.status.to_s == 'done'
+          gc = s.grader_comment.to_s
+          if tc_count == 0
+            true
+          elsif gc.length == tc_count && gc.match?(/\A[PsS]+\z/)
+            true
+          else
+            false
+          end
+        else
+          false
+        end
+      end
+      best_sub = full_pass_candidates.any? ? full_pass_candidates.max_by(&:id) : candidates.max_by(&:id)
+      @prob_submissions[prob_id][:best_submission] = best_sub
     end
 
     # calculate max score
