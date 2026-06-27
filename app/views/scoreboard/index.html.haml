@@ -59,7 +59,11 @@
                   - @leaderboard.each do |entry|
                     %tr
                       %td.text-center.fw-bold= entry[:rank]
-                      %td= entry[:user].full_name
+                      %td
+                        = entry[:user].full_name
+                        - if @current_user && entry[:user].id == @current_user.id
+                          %br
+                          %small.text-muted (You)
                       %td.text-center.fw-bold= format_score(entry[:total_score])
                       - unless GraderConfiguration.disable_bonus?
                         %td.text-center.text-success= format_score(entry[:bonus_score]) if entry[:bonus_score].to_f > 0
@@ -103,8 +107,13 @@
                       %tr
                         %td.text-center.text-muted.small= m[:rank]
                         %td.ps-4
-                          %i.mi.mi-subdirectory-arrow-right.text-muted.me-2
-                          = m[:user].full_name
+                          .d-flex.align-items-start
+                            %i.mi.mi-subdirectory-arrow-right.text-muted.me-2.mt-1
+                            %div
+                              = m[:user].full_name
+                              - if @current_user && m[:user].id == @current_user.id
+                                %br
+                                %small.text-muted (You)
                         %td.text-center= format_score(m[:total_score])
                         - unless GraderConfiguration.disable_bonus?
                           %td.text-center.text-success= format_score(m[:bonus_score]) if m[:bonus_score].to_f > 0
