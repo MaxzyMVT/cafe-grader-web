@@ -280,7 +280,7 @@ Rails.application.routes.draw do
     end
     collection do
       get 'prob/:problem_id', to: 'submissions#index', as: 'problem'
-      get 'edit/:problem_id(/:user_id)', to: 'submissions#direct_edit_problem', as: 'direct_edit_problem'
+      get 'new/:problem_id(/:user_id)', to: 'submissions#direct_edit_problem', as: 'direct_edit_problem'
       get 'get_latest_submission_status/:uid/:pid', to: 'submissions#get_latest_submission_status', as: 'get_latest_submission_status'
     end
     resources :comments, only: [] do
