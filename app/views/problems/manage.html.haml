@@ -73,6 +73,18 @@
               .form-check
                 = f.check_box :clear_languages, class: 'form-check-input manage-action'
                 = f.label :clear_languages, 'Clear languages'
+      .row.border-top.pt-3.mt-3.mb-3
+        .col-md-12
+          %h6.fw-bold.text-dark.mb-2 Select Problems by Condition
+          .row.align-items-center.g-3
+            .col-md-3
+              = select_tag :select_by_tag, options_from_collection_for_select(Tag.all, 'name', 'name'), include_blank: '-- Select Tag --', class: 'select2 form-control', id: 'select-by-tag-dropdown'
+            .col-md-3
+              = select_tag :select_by_group, options_from_collection_for_select(Group.all, 'name', 'name'), include_blank: '-- Select Group --', class: 'select2 form-control', id: 'select-by-group-dropdown'
+            .col-md-3
+              = select_tag :select_by_lang, options_from_collection_for_select(Language.all, 'name', 'name'), include_blank: '-- Select Language --', class: 'select2 form-control', id: 'select-by-lang-dropdown'
+            .col-md-auto
+              %button#btn-select-match.btn.btn-outline-primary{type: 'button', onclick: 'selectProblemsByCondition()'} Select Match
       .d-flex.justify-content-end
         = f.submit 'Apply to Selected', class: 'btn btn-primary btn-flex px-4'
 
@@ -219,5 +231,54 @@
     $('#select_all').on('click', function(e) {
       $('.prob-select-check').prop('checked',e.target.checked)
     })
+
+    window.selectProblemsByCondition = function() {
+      const selectedTag = $('#select-by-tag-dropdown').val();
+      const selectedGroup = $('#select-by-group-dropdown').val();
+      const selectedLang = $('#select-by-lang-dropdown').val();
+
+      if (!selectedTag && !selectedGroup && !selectedLang) {
+        alert("Please select at least one condition (Tag, Group, or Language) first.");
+        return;
+      }
+
+      table.rows().every(function(rowIdx, tableLoop, rowLoop) {
+        const data = this.data();
+        let match = true;
+
+        // 1. Tag match
+        if (selectedTag) {
+          if (!data.tags || !data.tags.some(t => t.name === selectedTag)) {
+            match = false;
+          }
+        }
+
+        // 2. Group match
+        if (selectedGroup) {
+          if (!data.groups || !data.groups.includes(selectedGroup)) {
+            match = false;
+          }
+        }
+
+        // 3. Language match
+        if (selectedLang) {
+          if (!data.permitted_lang) {
+            match = false;
+          } else {
+            const langs = data.permitted_lang.split(/\s+/);
+            if (!langs.includes(selectedLang)) {
+              match = false;
+            }
+          }
+        }
+
+        if (match) {
+          const checkbox = document.getElementById(`prob-${data.id}`);
+          if (checkbox) {
+            checkbox.checked = true;
+          }
+        }
+      });
+    };
 
   });
