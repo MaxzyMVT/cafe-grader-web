@@ -91,8 +91,10 @@ class ReportController < ApplicationController
 
   def login_summary_query
     @users = Array.new
-    @since_time = Time.zone.parse(params[:since_datetime]) || Time.zone.now rescue Time.zone.now
-    @until_time = Time.zone.parse(params[:until_datetime]) || DateTime.new(3000, 1, 1) rescue DateTime.new(3000, 1, 1)
+    @since_time = (params[:since_datetime].present? ? Time.zone.parse(params[:since_datetime]) : nil) rescue nil
+    @since_time ||= Time.zone.now.beginning_of_day
+    @until_time = (params[:until_datetime].present? ? Time.zone.parse(params[:until_datetime]) : nil) rescue nil
+    @until_time ||= Time.zone.now.end_of_day
     record = User
       .left_outer_joins(:logins).group('users.id')
       .where("logins.created_at >= ? AND logins.created_at <= ?", @since_time, @until_time)
@@ -123,8 +125,10 @@ class ReportController < ApplicationController
 
   def login_detail_query
     @logins = Array.new
-    @since_time = Time.zone.parse(params[:since_datetime]) || Time.zone.now rescue Time.zone.now
-    @until_time = Time.zone.parse(params[:until_datetime]) || DateTime.new(3000, 1, 1) rescue DateTime.new(3000, 1, 1)
+    @since_time = (params[:since_datetime].present? ? Time.zone.parse(params[:since_datetime]) : nil) rescue nil
+    @since_time ||= Time.zone.now.beginning_of_day
+    @until_time = (params[:until_datetime].present? ? Time.zone.parse(params[:until_datetime]) : nil) rescue nil
+    @until_time ||= Time.zone.now.end_of_day
 
     @logins = Login.includes(:user).where("logins.created_at >= ? AND logins.created_at <= ?", @since_time, @until_time)
     case params[:users]
@@ -144,10 +148,7 @@ class ReportController < ApplicationController
     @submissions = submission_in_range(params[:sub_range])
       .joins(:problem).joins(:language).joins(:user)
 
-    # filter users
-    unless @users = User.all
-      @submissions = @submissions.where(user: @users)
-    end
+    @submissions = @submissions.where(user: @users)
 
     # filter submissions
     @submissions = @submissions.where(problem: @problems)
@@ -780,24 +781,22 @@ ORDER BY submitted_at
 
     # build @problems that matches the given params
     def selected_problems
-      # start with reportable problems (this already consider when @current_user is an admin)
+      # start with reportable problems (this already considers when @current_user is an admin)
       @problems = Problem.where(id: @current_user.problems_for_action(:report).ids)
 
-      # problem
-      prob_use = params[:probs][:use] rescue ''
-      if prob_use == 'all'
-        @problems = Problem.all
-      elsif prob_use == 'ids'
-        @problems = @problems.where(id: params[:probs][:ids])
-      elsif prob_use == 'groups'
-        ids = Group.where(id: params[:probs][:group_ids]).joins(:problems).pluck(:problem_id).uniq
-        @problems = @problems.where(id: ids)
-      elsif prob_use == 'tags'
-        ids = Tag.where(id: params[:probs][:tag_ids]).joins(:problems).pluck(:problem_id).uniq
-        @problems = @problems.where(id: ids)
-      else
-        # wrong PARAM
-        @problems = Problem.none
+      if params[:probs].present?
+        prob_use = params[:probs][:use] rescue ''
+        if prob_use == 'all'
+          @problems = Problem.all
+        elsif prob_use == 'ids'
+          @problems = @problems.where(id: params[:probs][:ids])
+        elsif prob_use == 'groups'
+          ids = Group.where(id: params[:probs][:group_ids]).joins(:problems).pluck(:problem_id).uniq
+          @problems = @problems.where(id: ids)
+        elsif prob_use == 'tags'
+          ids = Tag.where(id: params[:probs][:tag_ids]).joins(:problems).pluck(:problem_id).uniq
+          @problems = @problems.where(id: ids)
+        end
       end
 
       # sort it
@@ -805,19 +804,21 @@ ORDER BY submitted_at
     end
 
     def selected_users
-      return (@users = User.none) unless params.has_key? :users
-      @users = if params[:users][:use] == "group" then
-                 User.where(id: Group.where(id: params[:users][:group_ids]).joins(:groups_users).pluck(:user_id))
-      elsif params[:users][:use] == 'enabled'
-                 User.where(enabled: true)
-      elsif params[:users][:use] == 'all'
-                 User.all
+      if params[:users].present?
+        @users = if params[:users][:use] == "group" then
+                   User.where(id: Group.where(id: params[:users][:group_ids]).joins(:groups_users).pluck(:user_id))
+        elsif params[:users][:use] == 'enabled'
+                   User.where(enabled: true)
+        elsif params[:users][:use] == 'all'
+                   User.all
+        else
+                   User.all
+        end
       else
-                 # wrong PARAM
-                 User.none
+        @users = User.all
       end
 
-      # if user is not admin, filter problem to be only that are reportable
+      # if user is not admin, filter users to be only those that are reportable
       @users = @users.where(id: @current_user.reportable_users) unless @current_user.admin?
     end
 

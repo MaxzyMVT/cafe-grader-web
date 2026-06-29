@@ -1,12 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = [ "useOption", "groupSelect", "onlyUsers" ]
+  static targets = [ "useOption", "groupSelect" ]
 
   connect() {
     // Dispatch the initial state so listeners can load with the default values
     this.dispatchChange()
-    $(this.groupSelectTarget).on('change', () => { this.dispatchChange() });
+    if (this.hasGroupSelectTarget) $(this.groupSelectTarget).on('change', () => { this.dispatchChange() });
   }
 
   /**
@@ -36,8 +36,7 @@ export default class extends Controller {
 
     return {
       'users[use]': selectedRadio ? selectedRadio.value : 'all',
-      'users[group_ids]': $(this.groupSelectTarget).val(),
-      'users[only_users]': this.onlyUsersTarget.checked,
+      'users[group_ids]': this.hasGroupSelectTarget ? $(this.groupSelectTarget).val() : [],
     }
   }
 }

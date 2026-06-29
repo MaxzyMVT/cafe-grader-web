@@ -64,8 +64,8 @@
         data: (d) =>  {
           d.since_datetime = $('#since_datetime').val()
           d.until_datetime = $('#until_datetime').val()
-          d.users = $("input[name='users']:checked").val()
-          d.groups = $("#group_id").val()
+          d.users = $("input[name='users[use]']:checked").val()
+          d.groups = $("#users_group_ids").val()
         },
         dataType: 'json',
         beforeSend: (request) => {
@@ -109,8 +109,8 @@
         data: (d) =>  {
           d.since_datetime = $('#since_datetime').val()
           d.until_datetime = $('#until_datetime').val()
-          d.users = $("input[name='users']:checked").val()
-          d.groups = $("#group_id").val()
+          d.users = $("input[name='users[use]']:checked").val()
+          d.groups = $("#users_group_ids").val()
         },
         dataType: 'json',
         beforeSend: (request) => {
