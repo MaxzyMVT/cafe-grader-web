@@ -69,3 +69,20 @@
             %strong.text-dark Problem Group Mode
             to be enabled.
             #{link_to 'System Configuration', grader_configuration_index_path, class: 'text-decoration-none'}
+
+    -# --- Divider ---
+    %hr.text-secondary-subtle.my-3/
+
+    -# --- Section 3: Scoring & Scoreboard ---
+    %h6.fw-bold.text-dark.small.text-uppercase.mb-3 Group Scoring & Scoreboard
+    .d-flex.flex-column.gap-2
+      .d-flex.align-items-start.gap-2
+        %span.mi.md-18.text-success.flex-shrink-0 leaderboard
+        %small.text-secondary
+          %strong Group Scoreboard:
+          In group mode scoreboard, scores and totals are calculated based only on problems assigned to the specific group.
+      .d-flex.align-items-start.gap-2
+        %span.mi.md-18.text-danger.flex-shrink-0 block
+        %small.text-secondary
+          %strong Enabled Status:
+          If a member's association with a group is disabled (or the group itself is disabled), they will not be listed in the group scoreboard or have their scores counted towards group totals.

@@ -268,6 +268,10 @@ Rails.application.routes.draw do
       get 'toggle_enable'
       get 'stat'
       get 'stat/contest/:contest_id', to: 'user_admin#stat_contest', as: 'stat_contest'
+      post 'add_group'
+      delete 'remove_group/:group_id', to: 'user_admin#remove_group', as: 'remove_group'
+      post 'add_contest'
+      delete 'remove_contest/:contest_id', to: 'user_admin#remove_contest', as: 'remove_contest'
     end
   end
 

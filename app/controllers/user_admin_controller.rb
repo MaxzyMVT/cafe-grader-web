@@ -4,7 +4,7 @@ class UserAdminController < ApplicationController
   # Stimulus controller connection
   before_action :page_stimulus_controller, only: %w[admin index]
   before_action :set_user, only: %w[ clear_last_ip toggle_enable toggle_activate
-                                     edit update stat stat_contest ]
+                                     edit update stat stat_contest add_group remove_group add_contest remove_contest ]
 
   def index
     @user_count = User.count
@@ -125,12 +125,16 @@ class UserAdminController < ApplicationController
   end
 
   def edit
+    @groups = Group.all
+    @contests = Contest.all
   end
 
   def update
     if @user.update(user_params)
       redirect_to edit_user_admin_path(@user), notice: 'User was successfully updated.'
     else
+      @groups = Group.all
+      @contests = Contest.all
       render action: 'edit'
     end
   end
@@ -572,6 +576,58 @@ class UserAdminController < ApplicationController
       @users = User.find_users_with_no_contest
     end
     return [@contest, @users]
+  end
+
+  public
+
+  def add_group
+    group = Group.find_by(id: params[:group_id])
+    if group
+      gu = GroupUser.find_or_initialize_by(group_id: group.id, user_id: @user.id)
+      gu.role = 'editor'
+      gu.enabled = true
+      gu.save!
+      flash[:success] = "Added to group #{group.name}"
+    else
+      flash[:alert] = "Group not found"
+    end
+    redirect_to edit_user_admin_path(@user), status: :see_other
+  end
+
+  def remove_group
+    group = Group.find_by(id: params[:group_id])
+    if group
+      @user.groups.delete(group)
+      flash[:success] = "Removed from group #{group.name}"
+    else
+      flash[:alert] = "Group not found"
+    end
+    redirect_to edit_user_admin_path(@user), status: :see_other
+  end
+
+  def add_contest
+    contest = Contest.find_by(id: params[:contest_id])
+    if contest
+      cu = ContestUser.find_or_initialize_by(contest_id: contest.id, user_id: @user.id)
+      cu.role = 'editor'
+      cu.enabled = true
+      cu.save!
+      flash[:success] = "Added to contest #{contest.name}"
+    else
+      flash[:alert] = "Contest not found"
+    end
+    redirect_to edit_user_admin_path(@user), status: :see_other
+  end
+
+  def remove_contest
+    contest = Contest.find_by(id: params[:contest_id])
+    if contest
+      @user.contests.delete(contest)
+      flash[:success] = "Removed from contest #{contest.name}"
+    else
+      flash[:alert] = "Contest not found"
+    end
+    redirect_to edit_user_admin_path(@user), status: :see_other
   end
 
 
