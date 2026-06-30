@@ -6,6 +6,7 @@ class ApplicationController < ActionController::Base
 
   before_action :read_grader_configuration
   before_action :current_user
+  before_action :rate_limit
   before_action :set_current_audit_context
   before_action :current_contest
   before_action :header_info
@@ -337,5 +338,21 @@ class ApplicationController < ActionController::Base
     md = text.match(/(\d+)\/(\d+)\/(\d+), (\d+):(\d+)/)
     result = Time.zone.local(md[3].to_i, md[2].to_i, md[1].to_i, md[4].to_i, md[5].to_i) rescue default
     return result
+  end
+
+  def rate_limit
+    return if @current_user&.admin? || @current_user&.problem_setter?
+
+    ip = request.remote_ip
+    cache_key = "rate_limit:#{ip}:#{Time.now.to_i / 60}"
+    
+    count = Rails.cache.fetch(cache_key, expires_in: 1.minute) { 0 } rescue 0
+    count += 1
+    Rails.cache.write(cache_key, count, expires_in: 1.minute) rescue nil
+
+    if count > 300
+      logger.warn "Rate limit exceeded for IP: #{ip}"
+      render plain: "Too Many Requests. Please wait a minute before retrying.", status: :too_many_requests
+    end
   end
 end
