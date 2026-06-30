@@ -10,9 +10,9 @@
     - enabled_groups = @current_user.groups.joins(:groups_users).where(groups: { enabled: true }, groups_users: { enabled: true }).order(:name).distinct
     - if enabled_groups.any?
       .mb-4
-        .alert.alert-info.d-flex.align-items-center.shadow-sm.mb-0
+        .alert.alert-info.d-flex.align-items-center.flex-wrap.shadow-sm.mb-0{style: 'min-width: 0; word-break: break-word;'}
           %span.mi.me-2 group
-          %span
+          %span{style: 'min-width: 0; flex: 1 1 auto;'}
             You are in the Group:
             != enabled_groups.pluck(:name).map { |name| "<strong>#{h(name)}</strong>" }.to_sentence
     - if GraderConfiguration.show_tasks_to?(@user)
