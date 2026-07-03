@@ -134,10 +134,7 @@ class User < ApplicationRecord
     [0.0, (raw_problem_scores - deductions + bonus).to_f].max
   end
   def enabled?
-    return false unless self[:enabled]
-    return true if admin? || problem_setter?
-    return false if groups.where(enabled: false).any?
-    true
+    !!self[:enabled]
   end
 
   # ---- problem for the users for specific action ------

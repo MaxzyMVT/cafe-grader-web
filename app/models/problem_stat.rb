@@ -6,7 +6,6 @@ class ProblemStat < ApplicationRecord
   def self.recompute_all
     exclude_ids = User.joins(:roles).where(roles: { name: ['admin', 'problem_setter'] }).pluck(:id)
     exclude_ids += User.where(enabled: false).pluck(:id)
-    exclude_ids += User.joins(:groups).where(groups: { enabled: false }).pluck(:id)
     exclude_ids = exclude_ids.uniq
 
     sql_cond = if exclude_ids.any?

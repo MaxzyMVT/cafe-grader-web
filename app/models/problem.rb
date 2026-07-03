@@ -88,8 +88,7 @@ class Problem < ApplicationRecord
     return [] if num == 0
     
     exclude_ids = User.joins(:roles).where(roles: { name: ['admin', 'problem_setter'] }).pluck(:id)
-    disabled_group_user_ids = User.joins(:groups).where(groups: { enabled: false }).pluck(:id)
-    exclude_ids = (exclude_ids + disabled_group_user_ids + User.where(enabled: false).pluck(:id)).uniq
+    exclude_ids = (exclude_ids + User.where(enabled: false).pluck(:id)).uniq
     
     results = submissions.tag_default.joins(:user)
                 .where(points: full_score)

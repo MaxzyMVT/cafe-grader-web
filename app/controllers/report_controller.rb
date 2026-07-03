@@ -283,7 +283,6 @@ class ReportController < ApplicationController
     end
     exclude_user_ids = User.joins(:roles).where(roles: { name: roles_to_exclude }).pluck(:id)
     exclude_user_ids += User.where(enabled: false).pluck(:id)
-    exclude_user_ids += User.joins(:groups).where(groups: { enabled: false }).pluck(:id)
     subs_scope = subs_scope.where.not(user_id: exclude_user_ids.uniq)
 
     # Helper scope for passed submissions (score >= full_score)
@@ -573,7 +572,6 @@ class ReportController < ApplicationController
     end
     exclude_ids = User.joins(:roles).where(roles: { name: roles_to_exclude }).pluck(:id)
     exclude_ids += User.where(enabled: false).pluck(:id)
-    exclude_ids += User.joins(:groups).where(groups: { enabled: false }).pluck(:id)
     exclude_ids = exclude_ids.uniq
     Submission.where(problem_id: @problem.id).where.not(user_id: exclude_ids).includes(:language).each do |sub|
       # histogram

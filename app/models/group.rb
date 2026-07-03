@@ -9,15 +9,15 @@ class Group < ApplicationRecord
   has_many :users, through: :groups_users
 
   scope :editable_by_user, ->(user_id) {
-    joins(:groups_users).where(groups_users: { user_id: user_id, enabled: true, role: 'editor' })
+    joins(:groups_users).where(groups: { enabled: true }, groups_users: { user_id: user_id, enabled: true, role: 'editor' })
   }
 
   scope :reportable_by_user, ->(user_id) {
-    joins(:groups_users).where(groups_users: { user_id: user_id, enabled: true, role: ['editor', 'reporter'] })
+    joins(:groups_users).where(groups: { enabled: true }, groups_users: { user_id: user_id, enabled: true, role: ['editor', 'reporter'] })
   }
 
   scope :submittable_by_user, ->(user_id) {
-    joins(:groups_users).where(groups_users: { user_id: user_id, enabled: true })
+    joins(:groups_users).where(groups: { enabled: true }, groups_users: { user_id: user_id, enabled: true })
   }
 
   scope :enabled, -> { where(enabled: true) }

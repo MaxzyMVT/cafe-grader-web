@@ -247,12 +247,11 @@ class MainController < ApplicationController
     if GraderConfiguration['system.group_score_type'] == 'group_max'
       user_group_ids = @current_user.groups.where(enabled: true).pluck(:id)
       if user_group_ids.any?
-        disabled_group_user_ids = User.joins(:groups).where(groups: { enabled: false }).pluck(:id)
         setter_admin_ids = User.joins(:roles).where(roles: { name: ['admin', 'problem_setter'] }).pluck(:id)
         group_user_ids = User.joins(:groups)
                              .where(groups: { id: user_group_ids })
                              .where(enabled: true)
-                             .where.not(id: disabled_group_user_ids + setter_admin_ids)
+                             .where.not(id: setter_admin_ids)
                              .pluck(:id).uniq
 
         if group_user_ids.any?
