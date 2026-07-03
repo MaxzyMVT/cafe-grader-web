@@ -661,13 +661,13 @@ golden-btn + .golden-btn { margin-top: 1em; }
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.25) !important;
 }
 
-[data-theme="space_gooners"] .btn-group .btn-check:checked + .btn-outline-secondary {
+[data-theme="space_legacy"] .btn-group .btn-check:checked + .btn-outline-secondary {
   background-color: var(--bs-warning) !important;
   border-color: var(--bs-warning) !important;
   color: var(--bs-dark) !important;
 }
 
-[data-theme="dark"], [data-theme="space_gooners"], [data-theme="premium"] {
+[data-theme="dark"], [data-theme="space_legacy"], [data-theme="premium"] {
   color-scheme: dark;
 }
 
