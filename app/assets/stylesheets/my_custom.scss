@@ -776,3 +776,12 @@ table.dataTable thead td span.dt-column-order {
     display: inline-block;
   }
 }
+
+/* Responsive images in cards, announcements, and markdown wrappers */
+.card-text, .card-body, .announcements-feed {
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: inline-block;
+  }
+}
