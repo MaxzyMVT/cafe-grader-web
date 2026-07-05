@@ -787,11 +787,11 @@ table.dataTable thead td span.dt-column-order {
 }
 
 /* Theme-specific hyperlink coloring */
-a:not(.btn):not(.nav-link):not(.dropdown-item):not(.badge):not(.nav-tabs .nav-link):not(.page-link) {
-  color: var(--bs-link-color) !important;
+a:not(.btn):not(.nav-link):not(.dropdown-item):not(.badge):not(.nav-tabs .nav-link):not(.page-link):not(.navbar-brand) {
+  color: var(--bs-link-color);
   transition: color 0.15s ease-in-out;
 
   &:hover {
-    color: var(--bs-link-hover-color) !important;
+    color: var(--bs-link-hover-color);
   }
 }
