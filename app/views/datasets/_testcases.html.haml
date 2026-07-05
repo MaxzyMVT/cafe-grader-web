@@ -13,49 +13,50 @@
     = f.submit 'Set', class: 'btn btn-primary'
   .col-12
     = link_to 'Delete All Testcases', testcase_delete_all_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'This will delete ALL testcases in this dataset. Are you sure?' }, class: 'btn btn-outline-danger'
-%table.datatable.table-hover{style: 'width: 100%', data: {controller: 'row-reorder', 'row-reorder-url-value': testcase_reorder_dataset_path(ds, -123)}}
-  %thead
-    %tr
-      %th #
-      %th Codename
-      %th Group
-      %th Group Name
-      %th Weight
-      %th.text-end Action
-  %tbody
-    - last_group = nil
-    - odd = true
-    - ds.testcases.display_order.each.with_index do |tc,idx|
-      - if tc.group != last_group
-        - odd = !odd
-        - last_group = tc.group
-      %tr{class: (odd ? 'bg-secondary bg-opacity-25' : ''), id: "tc-#{tc.id}", data: {row_id: tc.id}, draggable: 'true'}
-        %td
-          .d-flex.align-items-center.gap-2
-            %span.mi.text-secondary{style: 'cursor: grab;', data: {bs_toggle: 'tooltip', bs_title: 'Drag to reorder'}} drag_indicator
-            = tc.num
-        %td
-          = tc.code_name
-        %td
-          = tc.group
-        %td
-          = tc.group_name
-        %td
-          = tc.weight
-        %td.py-1
-          .d-flex.gap-1.justify-content-end
-            = button_to testcase_move_up_dataset_path(ds, tc), class: 'btn btn-outline-secondary border-0 p-1 btn-flex', title: 'Move Up', form: {data: {turbo: true}} do
-              %span.mi arrow_upward
-            = button_to testcase_move_down_dataset_path(ds, tc), class: 'btn btn-outline-secondary border-0 p-1 btn-flex', title: 'Move Down', form: {data: {turbo: true}} do
-              %span.mi arrow_downward
-            = button_to testcase_input_dataset_path(ds, tc), class: 'btn btn-outline-primary border-0 p-1 btn-flex gap-1', title: 'Download Input', form: {data: {turbo: true}} do
-              %span.mi file_download
-              %span.small In
-            = button_to testcase_sol_dataset_path(ds, tc), class: 'btn btn-outline-primary border-0 p-1 btn-flex gap-1', title: 'Download Solution', form: {data: {turbo: true}} do
-              %span.mi download
-              %span.small Sol
-            = button_to testcase_delete_dataset_path(ds, tc), class: 'btn btn-outline-danger border-0 p-1 btn-flex', title: 'Delete', form: {data: {turbo: true, 'turbo-confirm': 'Really delete? This is very hard to undo' }} do
-              %span.mi delete
+.table-responsive
+  %table.datatable.table-hover{style: 'width: 100%', data: {controller: 'row-reorder', 'row-reorder-url-value': testcase_reorder_dataset_path(ds, -123)}}
+    %thead
+      %tr
+        %th #
+        %th Codename
+        %th Group
+        %th Group Name
+        %th Weight
+        %th.text-end Action
+    %tbody
+      - last_group = nil
+      - odd = true
+      - ds.testcases.display_order.each.with_index do |tc,idx|
+        - if tc.group != last_group
+          - odd = !odd
+          - last_group = tc.group
+        %tr{class: (odd ? 'bg-secondary bg-opacity-25' : ''), id: "tc-#{tc.id}", data: {row_id: tc.id}, draggable: 'true'}
+          %td
+            .d-flex.align-items-center.gap-2
+              %span.mi.text-secondary{style: 'cursor: grab;', data: {bs_toggle: 'tooltip', bs_title: 'Drag to reorder'}} drag_indicator
+              = tc.num
+          %td
+            = tc.code_name
+          %td
+            = tc.group
+          %td
+            = tc.group_name
+          %td
+            = tc.weight
+          %td.py-1
+            .d-flex.gap-1.justify-content-end
+              = button_to testcase_move_up_dataset_path(ds, tc), class: 'btn btn-outline-secondary border-0 p-1 btn-flex', title: 'Move Up', form: {data: {turbo: true}} do
+                %span.mi arrow_upward
+              = button_to testcase_move_down_dataset_path(ds, tc), class: 'btn btn-outline-secondary border-0 p-1 btn-flex', title: 'Move Down', form: {data: {turbo: true}} do
+                %span.mi arrow_downward
+              = button_to testcase_input_dataset_path(ds, tc), class: 'btn btn-outline-primary border-0 p-1 btn-flex gap-1', title: 'Download Input', form: {data: {turbo: true}} do
+                %span.mi file_download
+                %span.small In
+              = button_to testcase_sol_dataset_path(ds, tc), class: 'btn btn-outline-primary border-0 p-1 btn-flex gap-1', title: 'Download Solution', form: {data: {turbo: true}} do
+                %span.mi download
+                %span.small Sol
+              = button_to testcase_delete_dataset_path(ds, tc), class: 'btn btn-outline-danger border-0 p-1 btn-flex', title: 'Delete', form: {data: {turbo: true, 'turbo-confirm': 'Really delete? This is very hard to undo' }} do
+                %span.mi delete
 %h4.mt-5 Import testcases
 - if @errors
   .alert.alert-danger

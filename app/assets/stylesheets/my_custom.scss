@@ -769,4 +769,10 @@ table.dataTable thead td span.dt-column-order {
       background-color: rgba(255, 255, 255, 0.03);
     }
   }
+
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: inline-block;
+  }
 }
