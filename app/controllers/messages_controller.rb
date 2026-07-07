@@ -40,15 +40,18 @@ class MessagesController < ApplicationController
     @r_message = Message.new(message_params)
     @r_message.receiver = @message.sender
     @r_message.sender = @current_user
-    if @message.body == '' or !@message.save
-      flash[:notice] = 'An error occurred'
-      redirect_to :action => 'show', :id => @message.replying_message_id
-    else
+    @r_message.replying_message = @message
+
+    if @r_message.body.blank?
+      flash[:alert] = 'Reply body cannot be blank'
+      redirect_to action: 'show', id: @message.id
+    elsif @r_message.save
+      @message.update(replied: true)
       flash[:notice] = 'Message replied'
-      @message.replied = true
-      @message.replying_message = @r_message
-      @message.save
-      redirect_to :action => 'console'
+      redirect_to action: 'console'
+    else
+      flash[:alert] = 'An error occurred while saving the reply'
+      redirect_to action: 'show', id: @message.id
     end
   end
 

@@ -75,4 +75,19 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to action: "console"
     assert @msg.reload.replied
   end
+
+  test "admin can reply to a message" do
+    sign_in_as("admin", "admin")
+    assert_difference "Message.count", 1 do
+      post reply_message_path(@msg), params: { message: { body: "admin reply" } }
+    end
+    assert_redirected_to action: "console"
+    assert @msg.reload.replied
+    
+    reply = Message.last
+    assert_equal "admin reply", reply.body
+    assert_equal @msg.id, reply.replying_message_id
+    assert_equal users(:john).id, reply.receiver_id
+    assert_equal users(:admin).id, reply.sender_id
+  end
 end
