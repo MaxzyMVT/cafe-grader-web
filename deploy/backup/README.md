@@ -170,7 +170,7 @@ barely change. So back them up at **different rates**:
 |------|-----------|-----|
 | **Database only** (`SCOPE=db`) | **every hour** | The hot data — keeps worst-case loss under ~1 hour |
 | **Full** (database + storage + workers) | **once a day** | Large (~1.5 GB); changes slowly, so daily is plenty |
-| Old backups | kept **14 days**, then auto-deleted (`KEEP_DAYS`) | |
+| Old backups | kept **7 days**, then auto-deleted (`KEEP_DAYS`) | |
 
 A *full* backup every hour would copy ~1.5 GB each time and fill your disk fast — that's why the hourly
 run is **database-only**. The two cron lines below set this up.
@@ -203,7 +203,7 @@ file, then tell cron to use it.
    The first field is the schedule: `0 * * * *` = top of every hour, `30 2 * * *` = 02:30 daily. Your
    computer must be **on and awake** at those times for the backup to run.
 
-Backups older than 14 days are deleted automatically so your disk doesn't fill up (change with
+Backups older than 7 days are deleted automatically so your disk doesn't fill up (change with
 `KEEP_DAYS`).
 
 ---

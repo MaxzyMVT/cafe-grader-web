@@ -30,7 +30,7 @@ OBS_BUCKET="${OBS_BUCKET:-}"                          # e.g. cafe-grader-backups
 OBS_PREFIX="${OBS_PREFIX:-worker-$(hostname -s)}"     # per-worker path in bucket
 OBSUTIL="${OBSUTIL:-obsutil}"
 
-KEEP_LOCAL_DAYS="${KEEP_LOCAL_DAYS:-7}"
+KEEP_LOCAL_DAYS="${KEEP_LOCAL_DAYS:-3}"
 # ----------------------------------------------------------------------------
 
 log() { printf '%s [backup-worker] %s\n' "$(date '+%F %T')" "$*"; }

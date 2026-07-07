@@ -20,7 +20,7 @@
 #   ./pull-backup.sh -h                      # this help
 #
 # Environment overrides:
-#   SSH_USER (root)  DEST_DIR (~/cafe-grader-backups)  KEEP_DAYS (14)
+#   SSH_USER (root)  DEST_DIR (~/cafe-grader-backups)  KEEP_DAYS (7)
 #   DB_USER / DB_PASS  (only if mysqldump needs a login)
 #   APP_DIR          (Cafe-Grader path on the servers, if auto-detect fails)
 #   SCOPE            (full = DB+files+workers [default] ; db = database only, for hourly)
@@ -33,7 +33,7 @@ case "${1:-}" in -h|--help) awk 'NR>=3&&/^#/{sub(/^# ?/,"");print;next} NR>=3{ex
 # --- settings (override via env) --------------------------------------------
 SSH_USER="${SSH_USER:-root}"
 DEST_DIR="${DEST_DIR:-$HOME/cafe-grader-backups}"
-KEEP_DAYS="${KEEP_DAYS:-14}"
+KEEP_DAYS="${KEEP_DAYS:-7}"
 DB_USER="${DB_USER:-}"
 DB_PASS="${DB_PASS:-}"
 APP_DIR="${APP_DIR:-}"   # path to Cafe-Grader ON THE SERVERS (blank = auto-detect common paths)

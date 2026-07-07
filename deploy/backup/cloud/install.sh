@@ -110,7 +110,7 @@ echo "==> Writing schedule to $CRON_FILE"
     echo "# hourly — database only (light, no table locks)"
     echo "15 * * * * root BACKUP_LABEL=db INCLUDE_STORAGE=0 INCLUDE_DATA=0 OBS_PREFIX=web-db/hourly KEEP_LOCAL_DAYS=2 $DEST_DIR/backup-web-db.sh >> /var/log/cafe-backup.log 2>&1"
     echo "# daily 02:30 — full (database + storage/ + configs)"
-    echo "30 2 * * * root BACKUP_LABEL=full INCLUDE_STORAGE=1 OBS_PREFIX=web-db/daily KEEP_LOCAL_DAYS=7 $DEST_DIR/backup-web-db.sh >> /var/log/cafe-backup.log 2>&1"
+    echo "30 2 * * * root BACKUP_LABEL=full INCLUDE_STORAGE=1 OBS_PREFIX=web-db/daily KEEP_LOCAL_DAYS=3 $DEST_DIR/backup-web-db.sh >> /var/log/cafe-backup.log 2>&1"
   else
     echo "# weekly Sun 03:00 — worker config + judge dir"
     echo "0 3 * * 0 root $DEST_DIR/backup-worker.sh >> /var/log/cafe-backup.log 2>&1"

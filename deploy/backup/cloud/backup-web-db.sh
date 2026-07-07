@@ -27,7 +27,7 @@ BACKUP_DIR="${BACKUP_DIR:-/var/backups/cafe-grader}"  # local staging dir
 # Backup stream label -> goes into the filename and scopes local pruning, so the
 # hourly DB-only stream and the daily full stream retain independently:
 #   hourly DB-only :  BACKUP_LABEL=db    INCLUDE_STORAGE=0  KEEP_LOCAL_DAYS=2
-#   daily full     :  BACKUP_LABEL=full  INCLUDE_STORAGE=1  KEEP_LOCAL_DAYS=7
+#   daily full     :  BACKUP_LABEL=full  INCLUDE_STORAGE=1  KEEP_LOCAL_DAYS=3
 BACKUP_LABEL="${BACKUP_LABEL:-full}"
 
 # MySQL credentials. Prefer a ~/.my.cnf (chmod 600) with [client] user/password
@@ -47,7 +47,7 @@ OBS_BUCKET="${OBS_BUCKET:-}"                          # e.g. cafe-grader-backups
 OBS_PREFIX="${OBS_PREFIX:-web-db}"                    # path inside the bucket
 OBSUTIL="${OBSUTIL:-obsutil}"
 
-KEEP_LOCAL_DAYS="${KEEP_LOCAL_DAYS:-7}"   # prune local tarballs older than this
+KEEP_LOCAL_DAYS="${KEEP_LOCAL_DAYS:-3}"   # prune local tarballs older than this
 # (Remote retention is handled by an OBS lifecycle rule — see README.md.)
 # ----------------------------------------------------------------------------
 
