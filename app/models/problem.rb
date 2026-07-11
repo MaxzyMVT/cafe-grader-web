@@ -198,7 +198,7 @@ class Problem < ApplicationRecord
 
   scope :default_order, -> {
     if GraderConfiguration.contest_mode?
-      order('MIN(contests_problems.number)')
+      left_joins(:contests_problems).group('problems.id').order(Arel.sql('MIN(contests_problems.number)'))
     else
       order(:number).order(:name)
     end
