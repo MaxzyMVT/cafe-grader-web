@@ -14,7 +14,7 @@
             - if @current_contest.stop + (@current_contest_user&.extra_time_second || 0) < Time.zone.now
               -# contest is over
               %div.btn.btn-danger#countdown= "Contest is over"
-            - elsif !@current_contest&.contest_status == :later
+            - elsif @current_contest&.contest_status == :later
               -# contest is not started
               %div.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
             - else
