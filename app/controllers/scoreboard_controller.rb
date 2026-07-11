@@ -105,8 +105,34 @@ class ScoreboardController < ApplicationController
     end
 
     prob_ids = @problems.map(&:id)
+    zero_score_prob_ids = @problems.select { |p| p.effective_full_score == 0 }.map(&:id)
+    
+    passing_zero_sub_ids = []
+    if zero_score_prob_ids.any?
+      zero_subs = Submission.where(problem_id: zero_score_prob_ids, status: 'done', viva_archived_at: nil)
+      zero_subs.each do |s|
+        prob = @problems.find { |p| p.id == s.problem_id }
+        next unless prob
+        tc_count = prob.live_dataset&.testcases&.count || 0
+        clean_gc = s.grader_comment.to_s.gsub(/[\[\]\s]/, '')
+        passed = if tc_count == 0
+          true
+        elsif clean_gc.match?(/\A[PS]+\z/)
+          true
+        else
+          false
+        end
+        passing_zero_sub_ids << s.id if passed
+      end
+    end
+
     # Fetch completion times and passed counts for sorting ties (earliest to reach final score)
     max_pts_sub = Submission.where(problem_id: prob_ids)
+    if passing_zero_sub_ids.any?
+      max_pts_sub = max_pts_sub.where("submissions.points > 0 OR submissions.id IN (?)", passing_zero_sub_ids)
+    else
+      max_pts_sub = max_pts_sub.where("submissions.points > 0")
+    end
     max_pts_sub = max_pts_sub.group(:user_id, :problem_id).select('user_id, problem_id, MAX(points) as max_pts')
 
     first_bests = Submission.joins("INNER JOIN (#{max_pts_sub.to_sql}) mp ON submissions.user_id = mp.user_id AND submissions.problem_id = mp.problem_id AND submissions.points = mp.max_pts")
