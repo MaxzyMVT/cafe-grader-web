@@ -29,6 +29,7 @@ RSpec.describe "Problems API", type: :request do
             last_score: { type: :number, nullable: true },
             last_result: { type: :string, nullable: true },
             last_submission_time: { type: :string, format: "date-time", nullable: true },
+            last_submission_id: { type: :integer, nullable: true, description: "Id of the user's latest submission for this problem — fetch details via /api/v1/submissions/{id}" },
             has_testcase: { type: :boolean },
             has_attachment: { type: :boolean },
             max_submissions: { type: :integer, nullable: true },
@@ -44,12 +45,21 @@ RSpec.describe "Problems API", type: :request do
           }
         }
 
+        # non-nil points so the schema actually exercises the score types
+        # (points is DECIMAL/BigDecimal — regression: encoded as string "50.5")
+        before { submissions(:add1_by_admin).update_columns(points: 50.5) }
+
         run_test! do |response|
           data = JSON.parse(response.body)
           expect(data).to be_an(Array)
           names = data.map { |p| p["name"] }
           expect(names).to include("add")
           expect(names).not_to include("subtract") # not available
+
+          add = data.find { |p| p["name"] == "add" }
+          expect(add["best_score"]).to eq(50.5)
+          expect(add["last_score"]).to eq(50.5)
+          expect(add["last_submission_id"]).to eq(submissions(:add1_by_admin).id)
         end
       end
     end
@@ -76,6 +86,7 @@ RSpec.describe "Problems API", type: :request do
           last_score: { type: :number, nullable: true },
           last_result: { type: :string, nullable: true },
           last_submission_time: { type: :string, format: "date-time", nullable: true },
+          last_submission_id: { type: :integer, nullable: true, description: "Id of the user's latest submission for this problem — fetch details via /api/v1/submissions/{id}" },
           has_testcase: { type: :boolean },
           has_attachment: { type: :boolean },
           max_submissions: { type: :integer, nullable: true },
@@ -93,10 +104,15 @@ RSpec.describe "Problems API", type: :request do
 
         let(:id) { problems(:prob_add).id }
 
+        before { submissions(:add1_by_admin).update_columns(points: 50.5) }
+
         run_test! do |response|
           data = JSON.parse(response.body)
           expect(data["name"]).to eq("add")
           expect(data["submission_ids"]).to be_an(Array)
+          expect(data["best_score"]).to eq(50.5)
+          expect(data["last_score"]).to eq(50.5)
+          expect(data["last_submission_id"]).to eq(submissions(:add1_by_admin).id)
         end
       end
 
@@ -159,6 +175,19 @@ RSpec.describe "Problems API", type: :request do
 
         run_test!
       end
+
+      response "403", "viva problem PDF blocked for students" do
+        schema type: :object, additionalProperties: false, properties: { error: { type: :string } }
+
+        # The PDF on a viva problem is the interviewer's brief, not
+        # student-facing. Mirror of ProblemsController#download_by_type
+        # web-side gate. Admins/editors/reporters still get the file.
+        let(:user) { users(:john) }
+        let(:id) { problems(:prob_viva).id }
+        let(:type) { "pdf" }
+
+        run_test!
+      end
     end
   end
 
@@ -169,6 +198,28 @@ RSpec.describe "Problems API", type: :request do
       security [bearer: []]
 
       parameter name: :id, in: :path, type: :integer, required: true
+
+      response "200", "testcase metadata list" do
+        schema type: :array, items: {
+          type: :object, additionalProperties: false, properties: {
+            id: { type: :integer, description: "Global testcase id — pass this as {id} to /api/v1/testcases/{id}/input and /api/v1/testcases/{id}/sol" },
+            num: { type: :integer, description: "Display number within the problem (1, 2, 3, …) — not usable as {id} for the download endpoints" },
+            group: { type: :integer, nullable: true, description: "Testcase group number" },
+            group_name: { type: :string, nullable: true, description: "Testcase group name" },
+            weight: { type: :integer, nullable: true, description: "Score weight of this testcase" }
+          },
+          required: %w[id num]
+        }
+
+        let(:id) { problems(:prob_add).id }
+
+        run_test! do |response|
+          body = JSON.parse(response.body)
+          expect(body.length).to eq(2)
+          expect(body.map { |t| t["num"] }).to eq([1, 2])
+          expect(body.map { |t| t["id"] }).to all(be_a(Integer))
+        end
+      end
 
       response "403", "testcase viewing not allowed" do
         schema type: :object, additionalProperties: false, properties: { error: { type: :string } }

@@ -1,8 +1,11 @@
 %header
   %nav.navbar.navbar-dark.bg-primary.navbar-expand-xl.shadow
     .container-fluid
-      %a.navbar-brand.d-flex.align-items-center.gap-1{href: list_main_path}
-        %span.mi home
+      %a.navbar-brand.d-flex.align-items-center.gap-2{href: list_main_path}
+        -# Same asset as the favicon — single source of truth.
+        -# Bootstrap `.rounded` is redundant with the SVG's own rounded corners
+        -# but keeps the silhouette tidy if the SVG ever changes.
+        = image_tag 'icon.svg', alt: '', height: 28, width: 28, class: 'rounded'
         = GraderConfiguration.site_name&.html_safe || 'MAIN'
       .navbar-expand
         / display MODE button (with countdown in contest mode)
@@ -81,6 +84,7 @@
               %ul.dropdown-menu
                 %li= link_to 'Score Report', max_score_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :max_score)
                 %li= link_to 'Submission Report', submission_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :submission)
+                %li= link_to 'Activity Report', activity_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :activity)
                 %li= link_to 'Login Report', login_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :login)
                 %li= link_to 'AI Report', ai_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :ai)
                 %li= link_to 'Statistics Report', extended_stat_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :extended_stat)
@@ -170,7 +174,7 @@
   }
 
   function checkInLoop() {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); // Get the CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'); // Get the CSRF token
     const check_in_url = '#{user_check_in_contests_path}'
     const check_in_interval_seconds = #{Contest.check_in_interval}
     let response_received_time = moment()

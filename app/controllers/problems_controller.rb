@@ -52,6 +52,17 @@ class ProblemsController < ApplicationController
       render 'error' and return
     end
 
+    # PDF statement is hidden from students for problem modes where the
+    # PDF is staff-only (viva). The base can_view_problem before_action
+    # has already passed; here we narrow to PDF-specific visibility.
+    # Note: 'attachment' is intentionally NOT gated — generic file
+    # downloads remain available to anyone who can see the problem.
+    if %w[statement generated_statement].include?(attachment_type) &&
+       !@current_user.can_view_problem_pdf?(@problem)
+      @error_message = "This problem's statement isn't available."
+      render 'error' and return
+    end
+
     attachment = @problem.send(attachment_type)
 
     # build the filename or render error when the type is invalid
@@ -133,17 +144,19 @@ class ProblemsController < ApplicationController
     end
 
     if success
-      @toast = {title: 'Problem created',
-                body:  "Problem <code>#{@problem.name}</code> was successfully created.",
-                type:  :notice}
-      @event_dispatcher = {event_name: 'datatable:reload', event_detail: {}}
+      # /problems/index is server-rendered with non-AJAX DataTables, so a
+      # turbo_stream toast can't refresh the row list. Mirror the regular
+      # `create` action and let Turbo follow a See Other to re-render the page.
+      redirect_to problems_path,
+                  notice: "Problem '#{@problem.name}' was successfully created.",
+                  status: :see_other
     else
       @toast = {title: 'Quick create failed',
                 body:  "Could not create problem.",
                 errors: @problem.errors.full_messages,
                 type:  :alert}
+      render 'turbo_toast', status: :unprocessable_entity
     end
-    render 'turbo_toast'
   end
 
   def edit

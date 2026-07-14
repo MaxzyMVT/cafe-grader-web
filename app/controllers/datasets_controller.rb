@@ -149,6 +149,9 @@ class DatasetsController < ApplicationController
     num = tc.num
     tc.destroy
     dataset.resequence_testcases!
+    # workers cache testcase files per dataset; without this they keep
+    # grading against the deleted case
+    dataset.invalidate_worker
 
     @active_dataset_tab = '#testcases'
     @toast = {title: 'Testcase changed',

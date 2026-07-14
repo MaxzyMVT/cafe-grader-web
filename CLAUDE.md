@@ -6,14 +6,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Cafe-Grader is an online programming contest and assignment grading platform (used at Chulalongkorn University). Students submit code, which is automatically compiled and evaluated against test cases. Instructors manage problems, contests, groups, and view reports.
 
+**Backlog of deferred work** lives in `doc/backlog.md` — design refactors, "someday" follow-ups, and decisions parked for a longer session. Check it when starting work in an area that might already have a planned change; add to it (don't bury in comments) when you defer something non-trivial. Inline `# TODO(scope): …` is fine for one-liners anchored to code; GitHub Issues are for scheduled/assigned work.
+
 ## Version Control
 
 Local VCS is **Mercurial (hg)**, mirrored to **GitHub** via the **hg-git** extension. Use `hg` for all local operations (`hg status`, `hg commit`, `hg diff`, `hg push`). Issues and PRs live on GitHub — use the `gh` CLI for those (e.g., `gh issue close 51`).
 
+**Branch workflow (`master` ↔ `chula_cp`).** Two long-lived bookmarks:
+- **`master`** — trunk / the upstream-facing line. **All commits land here.**
+- **`chula_cp`** — the Chula CP deployment branch. It carries deployment-specific config that is intentionally absent on master (e.g. the viva LLM services in `config/llm.yml` are `Llm::VivaTurnGenieAssist` / `Llm::VivaGradeGenieAssist` on chula_cp but blank on master). The dev server / Solid Queue worker should run **on chula_cp**, since those classes only exist there.
+
+`chula_cp` **only ever receives batch-merges from master** — `hg update chula_cp && hg merge master && hg commit -m "merge master: …"` — bundled at logical stopping points, not per commit. **Never commit directly on `chula_cp`** (it skips master and creates divergence to clean up later). Before any `hg commit`, check the active bookmark (`hg log -r . --template '{activebookmark}\n'`); if `chula_cp` is active, `hg update master` first. One `hg push` mirrors both bookmarks via hg-git. Fuller context: the `/release` skill's conventions and `doc/llm-refactor-handoff-2026-05-07.md`.
+
+## Changelog
+
+`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/); the top `[Unreleased]` section accumulates changes between releases. **Maintain it incrementally — don't reconstruct it from the commit log at release time.** When a commit makes a *user- or operator-facing* change (new feature/report/endpoint, behavior change, bug fix, or a config/setup change that affects fresh clones), add a curated `### Added/Changed/Fixed/Security` bullet under `[Unreleased]` in the *same commit*, citing the rev. Skip pure internals — refactors, test-only changes, dependency bumps, and Claude/dev tooling (skills, editor config) that don't change app behavior (e.g. the `/release` and `/upstream-sync` skills are deliberately not in the changelog). Cutting a release is then just renaming `[Unreleased]` → `[X.Y.Z] — YYYY-MM-DD`; the `/release` skill's log-backfill step is a safety net, not the primary path.
+
 ## Tech Stack
 
 - **Ruby 3.4.4, Rails 8.0.0** (with `load_defaults 7.0`)
-- **MySQL** (primary DB: `grader`, queue DB: `grader_queue`)
+- **MySQL 8.0+ only** (Oracle MySQL or Percona; **MariaDB unsupported** — every table uses the `utf8mb4_0900_ai_ci` collation, which MariaDB lacks; enforced by `test/schema_collation_test.rb`, rationale in `doc/decisions.md`). Primary DB: `grader`, queue DB: `grader_queue`
 - **Propshaft** asset pipeline, **ImportMap** for JS, **dartsass-rails** for CSS (no Node/yarn dependency)
 - **Hotwire** (Turbo + Stimulus), jQuery (legacy), Bootstrap 5
 - **HAML** templates
@@ -36,7 +48,8 @@ bin/rails db:migrate             # primary DB migrations
 bin/rails db:migrate:queue       # queue DB migrations (db/queue_migrate/)
 
 # Tests
-bin/rails test                   # all tests
+bin/rails check                  # EVERYTHING: minitest + RSpec API specs + swagger freshness (no system tests)
+bin/rails test                   # all minitest tests (does NOT run the RSpec API specs)
 bin/rails test test/models/      # test a directory
 bin/rails test test/models/user_test.rb        # single file
 bin/rails test test/models/user_test.rb:42     # single test by line
@@ -49,6 +62,7 @@ bundle exec brakeman             # security analysis
 # API specs & Swagger docs (RSpec + rswag)
 bundle exec rspec spec/requests/api/v1/          # run API tests
 bundle exec rails rswag:specs:swaggerize         # regenerate swagger/v1/swagger.yaml
+bin/rails swagger:verify         # fail if swagger.yaml is stale (also part of `check`)
 ```
 
 ## Architecture
@@ -162,9 +176,18 @@ AuditLog.record!(auditable: @contest,                 # one manual row
 - Primary: `grader` — application data
 - Queue: `grader_queue` — Solid Queue tables (migrations in `db/queue_migrate/`)
 
+## Development Environment
+
+- **File watcher (WSL2 critical):** `config/environments/development.rb` sets `config.file_watcher = ActiveSupport::EventedFileUpdateChecker`, backed by the `listen` gem. The Rails default (`ActiveSupport::FileUpdateChecker`) polls via `Dir.glob` on every request — on WSL2 that serializes concurrent requests on directory inode locks and made cascading turbo_frame requests (e.g. `/problems/:id/edit`) take ~2s each instead of ~80ms. If the cascade ever feels slow again, first check: did `listen` quietly fall back to polling? Look for "maximum number of watches reached" at boot. Current inotify limit: `cat /proc/sys/fs/inotify/max_user_watches` (default WSL2 was 8192 but this host has 524288). Raise with `sudo sysctl fs.inotify.max_user_watches=N`. listen docs: https://github.com/guard/listen. Rails' evented checker: https://api.rubyonrails.org/classes/ActiveSupport/EventedFileUpdateChecker.html.
+- **In-page profiler:** `rack-mini-profiler` is in the `:development` gem group with `stackprof` for flame-graph support. Speed-badge appears top-right on every HTML page (configurable via `config/initializers/rack_mini_profiler.rb`). Per-request breakdown by clicking the badge; `?pp=flamegraph&flamegraph_mode=wall` for stack-sampling profile (wall-mode is essential for diagnosing I/O / lock contention — CPU mode misses it). Visit `?pp=help` for the full menu. Zero production impact (gem group isolation).
+
 ## Testing Notes
 
 - **System tests + Turbo login:** the login form (`_login_box.html.haml`) uses `form_with`, which submits via Turbo. Capybara's `click_on 'Login'` returns once the click event fires, *before* Turbo's async fetch lands and replaces the page. A bare `visit some_path` immediately after will race the login and end up on the wrong page. In the local `login` helper for any new system test, sync after the click (e.g. `assert_current_path list_main_path, wait: 5`) before doing anything else.
+- **Async turbo_stream submits race the DB read.** A form that responds with a turbo_stream (e.g. the `do_manage` "Apply to Selected" bulk actions, which append a Bootstrap toast) updates the DB *before* the response renders, but the submission is async — a test that does `record.reload` immediately after clicking submit reads stale data. Wait for a deterministic post-submit signal first: those bulk actions append a toast, so `assert_selector ".toast", wait: 10` before the DB assertion; a redirect-with-notice form, `assert_text "<notice>"`. This made 5 tests (Clusters 3 & 4 + the languages bulk-set) look like real regressions when the logic was fine.
+- **Use an explicit `wait:` on assertions that follow an async submit.** The default Capybara wait (~2s) can time out under full-suite load, making a good test look "flaky." **Don't skip a flaky system test on a hunch** — verify the actual failure mechanism first (a controller-level test of the same logic, or a `page.evaluate_script` DOM diagnostic). Two tests were *wrongly skipped* on unverified diagnoses before the real causes (a load timeout; an async-submit race) were found.
+- **Admin index DataTables load rows via AJAX on `window load`.** Tables like `user_admin/index` and problems-manage init the DataTable on a full page load and fetch rows via POST. After a create→redirect, reload the index and `assert_text …, wait: 10` for a row (a turbo redirect won't fire `window load`). The AJAX init reads the CSRF token — keep it null-safe (`querySelector('meta[name="csrf-token"]')?.getAttribute('content')` or the jQuery `.attr()` form); the unguarded `.getAttribute` throws when the meta tag is absent (forgery protection is off in test) and silently kills the whole table.
+- **`fill_in` on a pre-filled field can append, not replace** (editing a Name that already reads "easy" → "easybeginner"). Pass `fill_options: { clear: :backspace }` when overwriting an existing value.
 
 ## Key Configuration
 
@@ -177,6 +200,8 @@ AuditLog.record!(auditable: @contest,                 # one manual row
 
 - **Icons:** Use the custom `.mi` class (e.g., `<span class="mi">edit</span>`) to render Google Material Symbols. Do *not* use raw SVGs or standard `material-icons` classes, as `.mi` is deeply integrated and optimized via `my_custom.scss`.
 - **Tooltips & JavaScript UI:** Any element requiring Bootstrap JS (like `data-bs-toggle="tooltip"`) **MUST** be placed inside a parent container that possesses the `data-controller="init-ui-component"` Stimulus attribute. This guarantees the tooltip perfectly survives Hotwire/Turbo Frame reloads.
+- **Data attributes — always use flat keys**, never nested hashes. Write `data: { bs_toggle: 'tooltip', bs_title: 'Save' }`, not `data: { bs: { toggle: 'tooltip' }, bs_title: 'Save' }`. HAML's attribute hash flattens nested hashes with hyphens, so the nested form *appears* to work inside `%button{...}` / `%a{...}` — but Rails' tag helper (`link_to`, `form_with`, `button_to`, `content_tag`, …) JSON-encodes nested hash values instead, producing `data-bs='{"toggle":"tooltip"}'` and silently breaking every Bootstrap component that reads `data-bs-toggle`. Always flat keeps both paths working. Underscores in keys become hyphens (`bs_toggle` → `data-bs-toggle`).
+- **Tooltips on non-tooltip toggles:** `data-bs-toggle` holds a single value, so a button that triggers an offcanvas/dropdown/modal can't also say `="tooltip"`. The `init-ui-component` controller specifically picks up `[data-bs-title][data-bs-toggle]:not([data-bs-toggle="tooltip"])` and wires a Bootstrap tooltip on it — so the recipe is: keep `data-bs-toggle="offcanvas"` (or whatever) and add `data-bs-title="…"` for the hover label.
 - **Server-mutating clicks (Turbo Streams):** Any click that performs a server-side action (toggle, delete, bulk-action, rejudge, etc.) MUST use a `<form>`, never `link_to ..., data: {remote: true}`. The codebase disables Turbo's link-driving (`Turbo.session.drive = false` in `app/javascript/application.js`), so every mutating form must opt in explicitly with `form: {data: {turbo: true}}`. Two sub-patterns:
   - **Flavor A (default) — `button_to` directly.** Use for one-shot actions where the URL/params are statically known. Example: dropdown bulk actions in `contests/show.html.haml`; the Rejudge button in `submissions/show.html.haml`. Pattern: `button_to "Label", path, class: 'btn ...', form: {class: 'd-inline', data: {turbo: true}}`.
   - **Flavor B — hidden form + Stimulus controller.** Use only when many similar controls hit the same endpoint with different per-row params, or when the visible control isn't a `<button>` (e.g. a checkbox switch). One hidden `form_with` lives once on the page; visible controls have `data-action="<stim>#<method>"` and the Stimulus controller fills hidden fields and submits. Examples: per-problem switches on `problems/index.html.haml`, per-row do_user/do_problem actions on `contests/show.html.haml`.
@@ -186,6 +211,8 @@ AuditLog.record!(auditable: @contest,                 # one manual row
 - **Vertical Rhythm (Spacing):** When defining the structural gaps between major cards or column sections, strictly normalize on `.mb-4` (24px) to ensure perfect horizontal alignment and grid consistency across the Left and Right panes.
 - **Stateless Dismissals:** For transient, short-lived UI states (like dismissing an "Updated" notification badge during a contest), use lightweight, cookie-based JavaScript rather than storing read-states in the primary `grader` database.
 - **Admin Controls:** When creating buttons exposed only to administrators (e.g., manage, edit, delete), use the elevated, icon-based pill button pattern: `class="btn btn-sm bg-white shadow-sm border-0 text-secondary d-inline-flex align-items-center justify-content-center"`. This should be paired with a Material Symbol inside (`<span class="mi">icon_name</span>`) and an active Bootstrap tooltip pointing out the action (`data-bs-toggle="tooltip" title="..."`).
+- **Offcanvas help triggers (exception to icon-only):** A button that opens a Bootstrap offcanvas help drawer should be **labeled**, e.g. `? Help`, not icon-only — even though it sits next to the icon-only Admin Controls. Operator buttons (Stats / Download / History) are invoked by users who already know what they do; help is the opposite — the people who need it most are the least likely to recognize a bare `?` icon. The visible label is the discoverability mechanism that makes the offcanvas pattern usable. Keep the elevated-pill class set, add `gap-1` for icon↔label spacing, and keep `data-bs-title="Help"` so the tooltip survives for icon-only viewports.
+- **Help-pattern split (context-dependent):** Two help patterns coexist intentionally — **inline knowledge card** (`_xxx_help.html.haml` rendered in the right column) on index/overview pages where there's empty space anyway and discoverability matters most for new admins; **offcanvas drawer** on edit/detail pages where space is at a premium. Do not invent a third pattern. When adding help to a new view, pick the one that matches the page type. The drawer trigger follows the labeled-button rule above.
 - **Admin DataTables:** Administrative data table definitions should natively implement `.table.table-hover.table-condense.align-middle` to dramatically improve vertical data density.
 - **Table Action Columns (Progressive Condensation):** Standardize row-level table actions into a single, right-aligned compact column (`<td class="align-middle py-1 pr-2">`). We apply a strict **Progressive Condensation** rule:
   - **High Action Density (>2 UI controls per row):** Pack all controls, especially destructive actions like "Remove", securely inside a `more_horiz` dropdown menu to completely eliminate horizontal bloat and prevent accidental 1-click deletions.

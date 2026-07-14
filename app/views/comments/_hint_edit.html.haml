@@ -6,7 +6,7 @@
           .col-12
             %h5.fw-bold.mb-3 Hint Detail
             = f.input :title
-            = f.input :body, as: :text, input_html: { rows: 5 }
+            = f.input :body, as: :text, input_html: { rows: 5 }, tooltip: 'Markdown is supported. Shown to students who choose to acquire this hint.'
             = f.input :cost, label: 'Full score cost (Problem cap)', tooltip: 'This value will be subtracted from the full score of the problem'
             = f.input :point_cost, label: 'Current points cost (Currency)', tooltip: 'This value will be subtracted from the contestant current total points'
             = f.input :all_points, label: 'Cost All Points', wrapper: :horizontal_boolean

@@ -13,7 +13,7 @@
 
     .d-flex.gap-2
       = link_to mdi(:queue, 'me-1') + 'Solid Queue', queues_grader_processes_path, class: 'btn btn-outline-primary btn-flex'
-      = link_to mdi(:refresh, 'me-1') + 'Refresh', grader_processes_path, class: 'btn btn-primary btn-flex'
+      = link_to mdi(:refresh, 'me-1') + 'Refresh', grader_processes_path(limit: (@submission_limit unless @submission_limit == 20)), class: 'btn btn-primary btn-flex'
 
   .row.gx-3
     -# ==========================================
@@ -44,6 +44,30 @@
               .card.border-0.bg-success-subtle.text-center.p-3.rounded-3
                 .fw-bold.h3.mb-1.text-success-emphasis= @wait_count['score'] || 0
                 .text-secondary.small Score
+
+      -# Background-Workers Card: single landing for "is anything else
+      -# broken right now?" Surfaces Solid Queue failures and stuck viva
+      -# turns — both invisible to the judge-job machinery above, but
+      -# operators need to see them in the same glance.
+      .card.shadow-sm.mb-4
+        .card-body
+          .d-flex.align-items-start.mb-3
+            .bg-secondary-subtle.text-secondary-emphasis.rounded-3.d-flex.align-items-center.justify-content-center.me-3{ style: "width: 48px; height: 48px; flex-shrink: 0;" }
+              %span.mi.md-36.fill bug_report
+
+            .flex-grow-1
+              %h5.fw-bold.text-dark.mb-0 Background Workers
+              .text-secondary.small Solid Queue + LLM job health
+
+          .row.g-3
+            .col-6
+              = link_to queues_grader_processes_path(status: 'failed'), class: 'card border-0 bg-danger-subtle text-center p-3 rounded-3 text-decoration-none' do
+                .fw-bold.h3.mb-1.text-danger-emphasis= @sq_failed_count
+                .text-secondary.small Solid Queue failures
+            .col-6
+              = link_to stuck_viva_turns_grader_processes_path, class: 'card border-0 bg-warning-subtle text-center p-3 rounded-3 text-decoration-none' do
+                .fw-bold.h3.mb-1.text-warning-emphasis= @stuck_viva_count
+                .text-secondary.small Stuck viva turns
 
       - if @error_jobs&.any?
         .card.shadow-sm.border-start.border-4.border-danger.mb-4
@@ -82,7 +106,7 @@
                     %td
                       %small.text-muted= time_ago_in_words(job.updated_at) + " ago"
                     %td
-                      = button_to retry_error_job_grader_processes_path(job_id: job.id), class: 'btn btn-sm btn-outline-primary border-0', data: {turbo: true, 'bs-toggle': 'tooltip'}, title: 'Retry' do
+                      = button_to retry_error_job_grader_processes_path(job_id: job.id), class: 'btn btn-sm btn-outline-primary border-0', data: {turbo: true, bs_toggle: 'tooltip', bs_title: 'Retry'} do
                         %span.mi replay
       -# Worker & Grader Card
       .card.shadow-sm.mb-4
@@ -114,7 +138,7 @@
     -# ---------- Right Column ------------------
     -# ==========================================
     .col-md-6
-      -# Last 20 Submissions Card
+      -# Recent Submissions Card
       .card.shadow-sm.mb-4
         .card-body
           .d-flex.align-items-start.mb-3
@@ -123,7 +147,15 @@
 
             .flex-grow-1
               %h5.fw-bold.text-dark.mb-0 Recent Submissions
-              .text-secondary.small Last 20 submissions
+              .text-secondary.small= "Last #{@submission_limit} submissions"
+
+            .d-flex.align-items-center.gap-2.small
+              %span.text-secondary Show:
+              - [20, 100, 500].each do |n|
+                - if n == @submission_limit
+                  %span.fw-bold.text-dark= n
+                - else
+                  = link_to n, grader_processes_path(limit: n), class: 'text-decoration-none'
 
           %table.table.table-hover.align-middle.mb-0
             %thead

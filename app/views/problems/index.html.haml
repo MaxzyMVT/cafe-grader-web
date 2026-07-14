@@ -28,13 +28,13 @@
           %th Full name
           %th Difficulty
           %th.text-center
-            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Checker'}} checkbook
+            %span.mi{data: {bs_toggle: 'tooltip', bs_title: 'Checker'}} checkbook
           %th.text-center
-            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Datasets (Testcases)'}} dataset
+            %span.mi{data: {bs_toggle: 'tooltip', bs_title: 'Datasets (Testcases)'}} dataset
           %th.text-center
-            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Hints'}} lightbulb
+            %span.mi{data: {bs_toggle: 'tooltip', bs_title: 'Hints'}} lightbulb
           %th.text-center
-            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Model Solutions'}} code
+            %span.mi{data: {bs_toggle: 'tooltip', bs_title: 'Model Solutions'}} code
           %th Tags
           %th
             Submit
@@ -43,9 +43,9 @@
             %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Submission Limit'}} counter_1
           %th Date added
           %th.text-center.all
-            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Available'}} toggle_on
+            %span.mi{data: {bs_toggle: 'tooltip', bs_title: 'Available to students'}} toggle_on
           %th.text-center
-            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Students can view testcases'}} bug_report
+            %span.mi{data: {bs_toggle: 'tooltip', bs_title: 'Students can view testcases'}} bug_report
           %th.text-center.all
       %tbody
         - for problem in @problems
@@ -56,9 +56,9 @@
             %td
               .d-inline-flex.align-items-center
                 = problem.full_name
-                = link_to_description_if_any mdi(:description, 'md-18 text-muted'), problem, class: 'ms-1 d-inline-flex text-decoration-none', title: 'Read statement', data: {'bs-toggle': 'tooltip'}
+                = link_to_description_if_any mdi(:description, 'md-18 text-muted'), problem, class: 'ms-1 d-inline-flex text-decoration-none', data: {bs_toggle: 'tooltip', bs_title: 'Read statement'}
                 - if problem.attachment.attached?
-                  = link_to mdi(:archive, 'md-18 text-muted'), download_by_type_problem_path(problem, 'attachment'), class: 'ms-1 d-inline-flex text-decoration-none', title: 'Download files', data: {'bs-toggle': 'tooltip'}
+                  = link_to mdi(:archive, 'md-18 text-muted'), download_by_type_problem_path(problem, 'attachment'), class: 'ms-1 d-inline-flex text-decoration-none', data: {bs_toggle: 'tooltip', bs_title: 'Download files'}
             %td= render_star(problem.difficulty)
             %td.text-center
               - if problem.live_dataset&.checker&.attached?
@@ -91,7 +91,7 @@
               .d-flex.gap-1.justify-content-end
                 = link_to mdi(:arrow_upward), move_up_problem_path(problem), class: 'btn btn-outline-secondary border-0 p-1 btn-flex', title: 'Move Up', data: {turbo: true, turbo_method: :post}
                 = link_to mdi(:arrow_downward), move_down_problem_path(problem), class: 'btn btn-outline-secondary border-0 p-1 btn-flex', title: 'Move Down', data: {turbo: true, turbo_method: :post}
-                = link_to "#{mdi(:finance)} Stat".html_safe, {:action => 'stat', :id => problem.id}, class: 'btn btn-flex btn-outline-primary border-0'
+                = link_to "#{mdi(:query_stats)} Stat".html_safe, {:action => 'stat', :id => problem.id}, class: 'btn btn-flex btn-outline-primary border-0'
                 = link_to "#{mdi(:edit)} Edit".html_safe, {:action => 'edit', :id => problem}, class: 'btn btn-flex btn-outline-primary border-0'
                 = link_to "#{mdi(:delete)}".html_safe, { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-outline-danger btn-flex border-0'
     %br

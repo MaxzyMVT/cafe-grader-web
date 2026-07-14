@@ -9,7 +9,7 @@
     %li.nav-item
       %button.nav-link{href: '#', data: {bs: {toggle: :tab, target: "#files"}},class: ('active' if @active_dataset_tab == '#files')} Files
   -# dataset tabs content
-  .tab-content
+  .tab-content.mt-3
     %div#settings.tab-pane.fade{class: (' show active ' if @active_dataset_tab == '#settings')}
       %div.mb-3
         = render partial: 'datasets/settings', locals: {ds: ds}

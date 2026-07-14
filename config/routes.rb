@@ -7,23 +7,36 @@ Rails.application.routes.draw do
       post "auth/login", to: "auth#login"
 
       get "me", to: "users#me"
+      resources :users, only: [:index, :show, :create, :update, :destroy]
       resources :languages, only: [:index]
 
       resources :contests, only: [:show] do
         get "problems", on: :member
       end
 
-      resources :problems, only: [:index, :show] do
+      resources :problems, only: [:index, :show, :create, :update, :destroy] do
         member do
           get "description"
           get "files/:type", action: "file", as: "file"
           get "data_files"
           get "testcases"
+          put "statement"
+          post "testcases/import", action: "import_testcases"
         end
         resources :submissions, only: [:index, :create]
+        resources :datasets, only: [:index, :create]
       end
 
-      resources :testcases, only: [] do
+      resources :datasets, only: [:update, :destroy] do
+        member do
+          post "set_live"
+          post "files", action: "file_create"
+          delete "files/:attachment_id", action: "file_delete", as: "file"
+        end
+        resources :testcases, only: [:create]
+      end
+
+      resources :testcases, only: [:update, :destroy] do
         member do
           get "input"
           get "sol"
@@ -285,6 +298,7 @@ Rails.application.routes.draw do
       # viva exam
       get 'viva', to: 'viva_sessions#show', as: 'viva'
       post 'viva/turns', to: 'viva_sessions#answer', as: 'viva_answer'
+      post 'viva/turns/:turn_id/retry', to: 'viva_sessions#retry_turn', as: 'viva_retry_turn'
       get 'viva/refresh', to: 'viva_sessions#refresh', as: 'viva_refresh'
       post 'archive_viva'
     end
@@ -318,6 +332,10 @@ Rails.application.routes.draw do
     # submission report
     get 'submission'
     post 'submission_query'
+
+    # activity report (per-user submission summary)
+    get 'activity'
+    post 'activity_query'
 
     # login report
     get 'login'
@@ -393,6 +411,7 @@ Rails.application.routes.draw do
       post 'retry_error_job'
       post 'retry_all_error_jobs'
       post 'clear_all_error_jobs'
+      get 'stuck_viva_turns'
     end
   end
 

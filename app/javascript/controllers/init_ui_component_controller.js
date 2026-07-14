@@ -23,12 +23,15 @@ export default class extends Controller {
 
 
   initializeTooltips() {
-    const tooltipTriggerList = this.element.querySelectorAll('[data-bs-toggle="tooltip"]');
+    // Standard tooltip triggers, PLUS any element with data-bs-title that uses
+    // data-bs-toggle for some other purpose (offcanvas, dropdown, modal, …) —
+    // since data-bs-toggle holds a single value, those elements can't say
+    // `="tooltip"` but still want a tooltip on hover.
+    const standard = this.element.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const piggybacked = this.element.querySelectorAll('[data-bs-title][data-bs-toggle]:not([data-bs-toggle="tooltip"])');
+    const all = [...standard, ...piggybacked];
 
-    // Create new tooltip instances for the current content
-    this.tooltipInstances = Array.from(tooltipTriggerList).map(tooltipTriggerEl => {
-      return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    this.tooltipInstances = all.map(el => new bootstrap.Tooltip(el));
   }
 
   initializePopovers() {
@@ -43,7 +46,9 @@ export default class extends Controller {
   initializeSelect2() {
     $(".select2").select2({
       theme: "bootstrap-5",
-      width: 'style'
+      width: 'style',
+      templateResult: this.formatArchivableOption,
+      templateSelection: this.formatArchivableOption
     });
   }
 
@@ -53,6 +58,31 @@ export default class extends Controller {
         $(el).select2('destroy');
       }
     });
+    // Bridge select2's jQuery-triggered `select2:select` event to a native
+    // `change` event. select2 v4 dispatches its events through jQuery, which
+    // does NOT always reach native addEventListener handlers — and Stimulus'
+    // `data-action="change->..."` uses native listeners. Without this bridge,
+    // a select2-styled dropdown's selection silently fails to trigger
+    // Stimulus actions. Namespaced .cafe_bridge so re-init doesn't stack
+    // duplicate handlers.
+    $(".select2").off("select2:select.cafe_bridge")
+                 .on("select2:select.cafe_bridge", (event) => {
+                   event.target.dispatchEvent(new Event("change", { bubbles: true }));
+                 });
+  }
+
+  // Render a muted "archived" pill on options flagged data-archived="true"
+  // (disabled/archived groups in the report filters, which — under the 3b
+  // authorization model — appear only for editors, who can still report on
+  // them). A plain no-op for every other option, so it's safe on all select2s.
+  formatArchivableOption(state) {
+    if (!state.id || !state.element) return state.text;
+    if (state.element.dataset && state.element.dataset.archived === "true") {
+      return $("<span>").text(state.text).append(
+        ' <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">archived</span>'
+      );
+    }
+    return state.text;
   }
 
   initializeTempusDominus() {

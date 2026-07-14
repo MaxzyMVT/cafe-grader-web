@@ -2,7 +2,7 @@
 - cookie_key = "dismissed_ann_#{announcement.id}_#{announcement.updated_at.to_i}"
 - is_updated = announcement.updated_at > 1.day.ago
 
-.card.mb-4{:id => "announcement-#{announcement.id}", "data-controller" => "init-ui-component dismiss-announcement", "data-dismiss-announcement-id-value" => announcement.id, "data-dismiss-announcement-timestamp-value" => announcement.updated_at.to_i, :class => (is_updated && cookies[cookie_key].blank? ? 'border-danger' : 'border-1 shadow-sm')}
+.card.mb-4{:id => "announcement-#{announcement.id}", "data-controller" => "init-ui-component dismiss-announcement", "data-dismiss-announcement-id-value" => announcement.id, "data-dismiss-announcement-timestamp-value" => announcement.updated_at.to_i, :class => "border-1 shadow-sm #{'border-danger border-opacity-50' if is_updated && cookies[cookie_key].blank?}"}
   .card-body
     .card-title.mb-1.d-flex.justify-content-between.align-items-start
       %h5.mb-0.d-flex.align-items-center
@@ -22,7 +22,7 @@
       - if is_contest
         = markdown(announcement.body)
       - else
-        = render_announcement_body(announcement)
+        = render 'announcements/body_preview', announcement: announcement
 
     - if announcement.file.attached?
       %hr.my-2
@@ -33,25 +33,3 @@
           = link_to announcement.file.filename, url_for(announcement.file), class: 'text-decoration-none ms-1', target: '_blank', data: {turbo: false}
           = link_to rails_blob_path(announcement.file, disposition: 'attachment'), class: 'text-secondary d-inline-flex align-items-center p-0 ms-1', title: 'Download instantly' do
             %span.mi{style: 'font-size: 1rem;'} download
-
-- content_for :modals do
-  - if !is_contest
-    .modal.fade{:id => "announcementModal-#{announcement.id}", :tabindex => "-1", "aria-labelledby" => "announcementModalLabel-#{announcement.id}", "aria-hidden" => "true"}
-      .modal-dialog.modal-lg.modal-dialog-scrollable
-        .modal-content
-          .modal-header
-            %h5.modal-title.fw-bold{:id => "announcementModalLabel-#{announcement.id}"}= announcement.title
-            %button.btn-close{"data-bs-dismiss" => "modal", "aria-label" => "Close"}
-          .modal-body
-            = markdown(announcement.body)
-            - if announcement.file.attached?
-              %hr.my-2
-              .text-uppercase.small.fw-bold.text-muted.mb-1 Attachments
-              .mt-2
-                %span.badge.bg-light.text-dark.border.d-inline-flex.align-items-center.gap-1
-                  = mdi('attachment', 'md-18')
-                  = link_to announcement.file.filename, url_for(announcement.file), class: 'text-decoration-none ms-1', target: '_blank', data: {turbo: false}
-                  = link_to rails_blob_path(announcement.file, disposition: 'attachment'), class: 'text-secondary d-inline-flex align-items-center p-0 ms-1', title: 'Download instantly' do
-                    %span.mi{style: 'font-size: 1rem;'} download
-          .modal-footer
-            %button.btn.btn-secondary{"data-bs-dismiss" => "modal"} Close

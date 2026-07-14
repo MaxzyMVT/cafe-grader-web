@@ -144,23 +144,32 @@ class Problem < ApplicationRecord
       .distinct(:id)                            # get distinct
   }
 
-  # Similar to group_submittable_by_user, but does not required GroupProblem.enabled to be enabled
-  scope :group_reportable_by_user, ->(user_id) {
-    group_actionable_by_user(user_id, ['editor', 'reporter'])
-  }
-
-  # Similar to group_submittable_by_user, but does not required GroupProblem.enabled to be enabled
+  # EDITOR = group-scoped content curator. An editor sees EVERY problem in a
+  # group they edit, regardless of Problem#available, Group#enabled, or
+  # GroupProblem#enabled — the group-scoped analogue of an admin's Problem.all,
+  # minus user management. This lets an editor manage a finished (archived) or
+  # not-yet-available (draft) problem in their own group; the old scope required
+  # available: true, which silently locked editors out of their own drafts.
   scope :group_editable_by_user, ->(user_id) {
-    group_actionable_by_user(user_id, ['editor'])
+    joins(groups_problems: {group: :groups_users})
+      .where('groups_users.user_id': user_id)   # user is in the group
+      .where('groups_users.role': 'editor')     # ...as an editor
+      .distinct
   }
 
-  scope :group_actionable_by_user, ->(user_id, roles = ['editor']) {
-    joins(groups_problems: {group: :groups_users})
+  # REPORTER = read-only on LIVE content: available problems in an enabled group.
+  # The report set is the editor set (curators see everything, incl. archived /
+  # unavailable) UNIONed with the reporter-gated set, so "editor >= reporter"
+  # holds everywhere. GroupProblem#enabled is intentionally ignored for both (a
+  # problem disabled within a group is a student-only hide; staff still report).
+  scope :group_reportable_by_user, ->(user_id) {
+    reporter_gated = Problem.joins(groups_problems: {group: :groups_users})
       .where(available: true)                   # available problems only
       .where('groups.enabled': true)            # groups is enabled
       .where('groups_users.user_id': user_id)   # user is in the group
-      .where('groups_users.role': roles)        # filter for user with roles
-      .distinct(:id)                            # get distinct
+      .where('groups_users.role': 'reporter')   # ...as a reporter
+    Problem.where(id: Problem.group_editable_by_user(user_id))
+           .or(Problem.where(id: reporter_gated))
   }
 
   # These contest_xxx scope ALWAYS take contest into account
@@ -291,6 +300,16 @@ class Problem < ApplicationRecord
   VIVA_PROMPT_REQUIRED_SECTIONS = {
     /^#+\s*Rubric\b/im => "an llm_prompt section starting with '# Rubric' (or ##/###)"
   }.freeze
+
+  # Whether the problem's statement PDF (or external description URL) is
+  # appropriate to show to students. False for viva problems — the PDF is
+  # the interviewer's brief, not student-facing material, and revealing
+  # it would defeat the interview. Instructors / admins bypass this via
+  # User#can_view_problem_pdf?, which short-circuits on edit/report
+  # access before consulting this method.
+  def pdf_visible_to_student?
+    !viva_exam?
+  end
 
   # Returns an array of human-readable error strings if the problem isn't
   # set up correctly to run a viva — empty array means good to go. Called
@@ -485,9 +504,9 @@ class Problem < ApplicationRecord
 
   # return ids array of permitted lang
   # if permitted_lang is blank, show nil
-  def get_permitted_lang_as_ids(when_blank: Language.ids)
+  def get_permitted_lang_as_ids(when_blank: Language.order(:id).ids)
     return when_blank if self.permitted_lang.blank?
-    return Language.where(name: self.permitted_lang.split(' ').uniq).ids
+    return Language.where(name: self.permitted_lang.split(' ').uniq).order(:id).ids
   end
 
   # this function return a content generated for "all_tests.cfg"

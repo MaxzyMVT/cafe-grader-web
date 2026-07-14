@@ -1,5 +1,5 @@
 - @active_problem_tab = '#general' unless %w[#general #description #hint].include? @active_problem_tab
-=turbo_frame_tag :problem, data: {controller: 'init-ui-component bs-tab', turbo: true} do
+=turbo_frame_tag :problem, data: {controller: 'init-ui-component bs-tab viva-mode-toggle', turbo: true} do
   %ul.nav.nav-tabs
     %li.nav-item
       %button.nav-link{data: {bs: {toggle: :tab, target: "#general"}},class: ('active' if @active_problem_tab == '#general') } General
@@ -12,133 +12,160 @@
     %input{type: 'hidden', name: 'active_problem_tab', 'data-bs-tab-target': 'activeTabInput'}
     .tab-content
       %div#general.my-3.tab-pane.fade{class: (' show active ' if @active_problem_tab == '#general')}
-        -# general
-        = form.input :name
-        = form.input :full_name
-        = form.input :statement, wrapper: :horizontal_file
-        .row
-          .col-sm-3
-          .col-sm-9
-            %p.d-inline-flex.align-items-center.gap-1
-              - if @problem.statement.attached?
-                = link_to "<span class='mi md-18 me-1'>description</span> Read (#{@problem.statement.filename})".html_safe, download_by_type_problem_path(@problem,'statement'), target: '_blank', data: {turbo: false}, class: 'link-flex'
-                = " | "
-                = link_to '<span class="mi md-18 me-1">delete</span> Delete'.html_safe, delete_by_type_problem_path(@problem,'statement'), class: 'link-flex link-danger', data: {turbo: true, turbo_method: 'delete', turbo_confirm: 'Really delete the Statement? This cannot be undone.'}
-              - else
-                This problem has no statement
-        = form.input :attachment, wrapper: :horizontal_file
-        .row
-          .col-sm-3
-          .col-sm-9
-            %p.d-inline-flex.align-items-center.gap-1
-              - if @problem.attachment.attached?
-                = link_to "<span class='mi md-18 me-1'>archive</span> File (#{@problem.attachment.filename})".html_safe, download_by_type_problem_path(@problem,'attachment'), target: '_blank', data: {turbo: false}
-                |
-                = link_to '<span class="mi md-18 me-1">delete</span> Delete'.html_safe, delete_by_type_problem_path(@problem,'attachment'), class: 'link-danger', data: {turbo: true, turbo_method: 'delete', turbo_confirm: 'Really delete the Attachment? This cannot be undone.'}
-              - else
-                This problem has no attachment
-        = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags with public value of true will be shown to contestant in the main page"
-        = form.input :group_ids, label: 'Groups', collection: Group.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: 'If no group added, then this problem is public, but if add the group, it will be visible to only selected groups'
-        = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @problem.get_permitted_lang_as_ids(when_blank: nil), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: 'Blank value means any language can be used'
-        .row.mb-3
-          %label.col-sm-3.col-form-label Date Added
-          .col-sm-9
-            %input.form-control{type: 'text', value: @problem.date_added&.strftime("%d/%b/%Y %H:%M:%S"), disabled: true}
-        = form.input :available, wrapper: :horizontal_boolean, label: 'Available', tooltip: 'Indicates whether this problem is active or inactive for configured groups.' , disabled: !(@current_user.admin? || @current_user.problem_setter?)
-        = form.input :view_testcase, wrapper: :horizontal_boolean, disabled: !(@current_user.admin? || @current_user.problem_setter?)
-        = form.input :view_submission, wrapper: :horizontal_boolean, disabled: !(@current_user.admin? || @current_user.problem_setter?)
-        -# Submission Limit
-        .row.mb-3
-          %label.col-sm-3.col-form-label
-            Submission Limit
-            %span.mi.md-18.text-body-tertiary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'Leave unchecked for unlimited submissions. When enabled, non-admin users cannot exceed this number of submissions.'}}} help_center
-          .col-sm-9
-            .d-flex.align-items-center.gap-3
-              .form-check
-                %input.form-check-input#submission_limit_enabled{type: 'checkbox', checked: problem.submission_limit?, onchange: 'toggleSubmissionLimit(this)'}
-                %label.form-check-label{for: 'submission_limit_enabled'} Enable limit
-              .input-group{style: 'max-width: 200px;'}
-                %input.form-control#problem_max_submissions{type: 'number', name: 'problem[max_submissions]', value: problem.max_submissions, min: 1, placeholder: 'Max', disabled: !problem.submission_limit?}
-                %span.input-group-text submissions
-        = form.input :full_score, required: true, tooltip: 'Maximum points a contestant can get from this problem (default 100)'
-        = form.input :difficulty, tooltip: 'Input integer value from 0 to 10. 1 difficulty = half star'
-        = form.input :bonus_first_blood, label: 'First Blood Bonus Point', tooltip: 'Additional points for the first active user to solve this problem', input_html: { step: 'any' }
-        = form.input :first_n_bloods, label: 'N-th Blood Winners Count', tooltip: 'Number of unique users who can receive the First Blood bonus points (default: 0). Setting to 0 disables first blood bonus for this problem.', input_html: { min: 0, step: 1 }
-        = form.input :compilation_type, collection: [['[Self Contained] The submissions can be compiled by itself','self_contained'],['[With managers] The submission will be compiled with the managers','with_managers'],['[Viva Exam] LLM-driven Socratic interview + rubric grading','viva_exam']], wrapper: :horizontal_select, tooltip: 'For Viva Exam, attach llm_prompt tags (interviewer persona + rubric) and viva_grounding tags (course materials). Test-case datasets do not apply.', include_blank: false
-        = form.input :submission_filename
-        = form.input :output_only, wrapper: :horizontal_boolean, tooltip: 'If set, the grader will not compile or run the submission. It will only grade the submitted output file(s) against the test cases. Useful for "output-only" tasks.', input_html: { id: 'problem_output_only', onchange: "document.getElementById('quick_testcase_box').style.display = this.checked ? 'flex' : 'none';" }
-        #quick_testcase_box.row.mb-3{style: ('display: none;' unless @problem.output_only?)}
-          .col-sm-3
-          .col-sm-9
-            .card.bg-light.p-3.border.border-secondary-subtle
-              %h6.card-title.d-flex.align-items-center.gap-2.mb-3.text-secondary.fw-bold
-                %span.mi.md-18 add_box
-                Quick Test Case Creator
-              .row.g-3
-                .col-md-12
-                  %label.form-label.d-flex.align-items-center.gap-1.mb-1
-                    Answer Text
-                    %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'The content that will be saved into the .sol file'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
-                  %textarea.form-control{name: 'answer_text', form: 'quick_testcase_form', rows: 3, placeholder: 'Answer content...'}
-                .col-md-12
-                  %label.form-label.d-flex.align-items-center.gap-1.mb-1
-                    Target Dataset
-                    %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'The dataset this testcase will be added to'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
-                  = select_tag 'dataset_id', options_from_collection_for_select(problem.datasets, :id, ->(ds) { ds.name + (ds == problem.live_dataset ? " (Live)" : "") }, problem.live_dataset&.id), form: 'quick_testcase_form', class: 'form-select'
-                .col-md-6
-                  %label.form-label.d-flex.align-items-center.gap-1.mb-1
-                    Codename
-                    %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'Unique code name for this testcase (e.g. 01, task1)'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
-                  %input.form-control{type: 'text', name: 'codename', form: 'quick_testcase_form', placeholder: 'e.g. 01'}
-                .col-md-6
-                  %label.form-label.d-flex.align-items-center.gap-1.mb-1
-                    Weight
-                    %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'Weight for this testcase (integer)'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
-                  %input.form-control{type: 'number', name: 'weight', form: 'quick_testcase_form', value: 1, min: 0}
-                .col-md-6
-                  %label.form-label.d-flex.align-items-center.gap-1.mb-1
-                    Group
-                    %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'Group number for subtask/scoring (integer)'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
-                  %input.form-control{type: 'number', name: 'group', form: 'quick_testcase_form', value: 1, min: 1}
-                .col-md-6
-                  %label.form-label.d-flex.align-items-center.gap-1.mb-1
-                    Group Name
-                    %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'Label or name of the group/subtask'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
-                  %input.form-control{type: 'text', name: 'group_name', form: 'quick_testcase_form', placeholder: 'e.g. Subtask 1'}
-              .mt-3.text-end
-                %button.btn.btn-secondary.btn-sm{type: 'submit', form: 'quick_testcase_form'} Add
+        %section.mb-4
+          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Identity
+          = form.input :name
+          = form.input :full_name
+
+        %section.mb-4
+          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Statement & Files
+          = form.input :statement, wrapper: :horizontal_file
+          .row
+            .col-sm-3
+            .col-sm-9
+              %p.d-inline-flex.align-items-center.gap-1
+                - if @problem.statement.attached?
+                  = link_to "<span class='mi md-18 me-1'>description</span> Read (#{@problem.statement.filename})".html_safe, download_by_type_problem_path(@problem,'statement'), target: '_blank', data: {turbo: false}, class: 'link-flex'
+                  = " | "
+                  = link_to '<span class="mi md-18 me-1">delete</span> Delete'.html_safe, delete_by_type_problem_path(@problem,'statement'), class: 'link-flex link-danger', data: {turbo: true, turbo_method: 'delete', turbo_confirm: 'Delete the statement? This cannot be undone.'}
+                - else
+                  No statement uploaded.
+          = form.input :attachment, wrapper: :horizontal_file
+          .row
+            .col-sm-3
+            .col-sm-9
+              %p.d-inline-flex.align-items-center.gap-1
+                - if @problem.attachment.attached?
+                  = link_to "<span class='mi md-18 me-1'>archive</span> File (#{@problem.attachment.filename})".html_safe, download_by_type_problem_path(@problem,'attachment'), target: '_blank', data: {turbo: false}
+                  |
+                  = link_to '<span class="mi md-18 me-1">delete</span> Delete'.html_safe, delete_by_type_problem_path(@problem,'attachment'), class: 'link-danger', data: {turbo: true, turbo_method: 'delete', turbo_confirm: 'Delete the attachment? This cannot be undone.'}
+                - else
+                  No attachment uploaded.
+
+        %section.mb-4
+          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Categorization
+          = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags marked public are shown to contestants on the main page."
+          = form.input :group_ids, label: 'Groups', collection: Group.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
+          = form.input :difficulty, tooltip: 'Integer between 0 and 10.'
+
+        %section.mb-4
+          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Visibility & Listing
+          = form.input :date_added, input_html: {value: @problem.date_added&.strftime("%d/%b/%Y"), class: 'tempus-dominus'}, wrapper: :horizontal_form, as: :string, tooltip: 'Used as the main sort order for problems on the main page.'
+          = form.input :available, wrapper: :horizontal_boolean, label: 'Globally Available', tooltip: 'If "Globally available" is not set, the problem will remain hidden from all contestants, even if enabled in groups or contests.' , disabled: @current_user.admin? == false
+          = form.input :view_testcase, wrapper: :horizontal_boolean, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}, disabled: @current_user.admin? == false
+          = form.input :view_submission, wrapper: :horizontal_boolean, disabled: @current_user.admin? == false, hint: 'For viva problems: controls whether other students can see this viva transcript.'
+          -# Submission Limit
+          .row.mb-3
+            %label.col-sm-3.col-form-label
+              Submission Limit
+              %span.mi.md-18.text-body-tertiary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'Leave unchecked for unlimited submissions. When enabled, non-admin users cannot exceed this number of submissions.'}}} help_center
+            .col-sm-9
+              .d-flex.align-items-center.gap-3
+                .form-check
+                  %input.form-check-input#submission_limit_enabled{type: 'checkbox', checked: problem.submission_limit?, onchange: 'toggleSubmissionLimit(this)'}
+                  %label.form-check-label{for: 'submission_limit_enabled'} Enable limit
+                .input-group{style: 'max-width: 200px;'}
+                  %input.form-control#problem_max_submissions{type: 'number', name: 'problem[max_submissions]', value: problem.max_submissions, min: 1, placeholder: 'Max', disabled: !problem.submission_limit?}
+                  %span.input-group-text submissions
+
+        %section.mb-4
+          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Grading & Compilation
+          = form.input :full_score, required: true, tooltip: 'Maximum points a contestant can get from this problem (default 100)'
+          = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @problem.get_permitted_lang_as_ids(when_blank: nil), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}, tooltip: 'Leave blank to allow any language.'
+          - compilation_options = [['<strong>Self contained</strong> <span class="text-secondary">— the submission compiles by itself (most problems).</span>'.html_safe, 'self_contained'], ['<strong>With managers</strong> <span class="text-secondary">— the submission is compiled together with manager files attached to the dataset.</span>'.html_safe, 'with_managers'], ['<strong>Viva Exam</strong> <span class="text-secondary">— LLM-driven Socratic interview + rubric grading. No test-case dataset; attach llm_prompt + viva_grounding tags instead.</span>'.html_safe, 'viva_exam']]
+          = form.input :compilation_type, as: :radio_buttons, collection: compilation_options, wrapper: :horizontal_collection, input_html: {data: {action: 'change->viva-mode-toggle#toggle'}}, tooltip: 'See Help drawer (top-right) for details on each mode.'
+          = form.input :submission_filename, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}
+          = form.input :bonus_first_blood, label: 'First Blood Bonus Point', tooltip: 'Additional points for the first active user to solve this problem', input_html: { step: 'any' }
+          = form.input :first_n_bloods, label: 'N-th Blood Winners Count', tooltip: 'Number of unique users who can receive the First Blood bonus points (default: 0). Setting to 0 disables first blood bonus for this problem.', input_html: { min: 0, step: 1 }
+          = form.input :output_only, wrapper: :horizontal_boolean, tooltip: 'If set, the grader will not compile or run the submission. It will only grade the submitted output file(s) against the test cases. Useful for "output-only" tasks.', input_html: { id: 'problem_output_only', onchange: "document.getElementById('quick_testcase_box').style.display = this.checked ? 'flex' : 'none';" }
+          #quick_testcase_box.row.mb-3{style: ('display: none;' unless @problem.output_only?)}
+            .col-sm-3
+            .col-sm-9
+              .card.bg-light.p-3.border.border-secondary-subtle
+                %h6.card-title.d-flex.align-items-center.gap-2.mb-3.text-secondary.fw-bold
+                  %span.mi.md-18 add_box
+                  Quick Test Case Creator
+                .row.g-3
+                  .col-md-12
+                    %label.form-label.d-flex.align-items-center.gap-1.mb-1
+                      Answer Text
+                      %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'The content that will be saved into the .sol file'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
+                    %textarea.form-control{name: 'answer_text', form: 'quick_testcase_form', rows: 3, placeholder: 'Answer content...'}
+                  .col-md-12
+                    %label.form-label.d-flex.align-items-center.gap-1.mb-1
+                      Target Dataset
+                      %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'The dataset this testcase will be added to'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
+                    = select_tag 'dataset_id', options_from_collection_for_select(problem.datasets, :id, ->(ds) { ds.name + (ds == problem.live_dataset ? " (Live)" : "") }, problem.live_dataset&.id), form: 'quick_testcase_form', class: 'form-select'
+                  .col-md-6
+                    %label.form-label.d-flex.align-items-center.gap-1.mb-1
+                      Codename
+                      %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'Unique code name for this testcase (e.g. 01, task1)'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
+                    %input.form-control{type: 'text', name: 'codename', form: 'quick_testcase_form', placeholder: 'e.g. 01'}
+                  .col-md-6
+                    %label.form-label.d-flex.align-items-center.gap-1.mb-1
+                      Weight
+                      %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'Weight for this testcase (integer)'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
+                    %input.form-control{type: 'number', name: 'weight', form: 'quick_testcase_form', value: 1, min: 0}
+                  .col-md-6
+                    %label.form-label.d-flex.align-items-center.gap-1.mb-1
+                      Group
+                      %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'Group number for subtask/scoring (integer)'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
+                    %input.form-control{type: 'number', name: 'group', form: 'quick_testcase_form', value: 1, min: 1}
+                  .col-md-6
+                    %label.form-label.d-flex.align-items-center.gap-1.mb-1
+                      Group Name
+                      %span.badge.rounded-circle.bg-secondary-subtle.text-secondary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'Label or name of the group/subtask'}}, style: 'cursor: help; font-size: 0.75rem; padding: 0.15rem 0.35rem;'} ?
+                    %input.form-control{type: 'text', name: 'group_name', form: 'quick_testcase_form', placeholder: 'e.g. Subtask 1'}
+                .mt-3.text-end
+                  %button.btn.btn-secondary.btn-sm{type: 'submit', form: 'quick_testcase_form'} Add
         = form.button :submit, class: 'btn btn-primary me-2'
       %div#description.my-3.tab-pane.fade{class: (' show active ' if @active_problem_tab == '#description')}
-        -# Description
-        .card.bg-warning-subtle.shadow-sm.mb-3
-          .card-body
-            %ul.mb-0
-              %li
-                Description is used internally and it is not shown to contestants. Its main usage is for
-                generating of a PDF statement and as a machine readable text of the statement.
-              %li
-                With LLM plugins, this description will be sent to the LLM of your choice for hinting and suggesting help to the contestant.
-              %li
-                You are not required to use a description, but when it is used, the content should match the actual PDF.
-        = form.input :description, as: :text, wrapper: :vertical_form
-        -# we hide the markdown and url which are no longer used
-          = form.input :markdown, wrapper: :horizontal_boolean
-          = form.input :url
-        %p.d-inline-flex.align-items-center.gap-1
-          - if @problem.generated_statement.attached?
-            = link_to "<span class='mi md-18 me-1'>description</span> Generated Statement".html_safe, download_by_type_problem_path(@problem,'generated_statement'), target: '_blank', data: {turbo: false}
-            = " | "
-            = link_to '<span class="mi md-18 me-1">delete</span> Delete'.html_safe, delete_by_type_problem_path(@problem,'generated_statement'), class: 'link-danger', data: {turbo: true, turbo_method: 'delete', turbo_confirm: 'Delete the generated document?'}
-          - else
-            This problem has no statement
+        %section.mb-4
+          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Markdown Statement
+          = form.input :description, as: :text, wrapper: :vertical_form, label: false, input_html: { rows: 20, class: 'font-monospace' }
+          %p.small.text-secondary.mt-1.mb-0
+            Internal markdown source — not shown to students directly. The PDF below is auto-regenerated whenever you save changes to the description.
+
+        %section.mb-4
+          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom PDF Export
+          .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+            -# Current PDF state
+            - if @problem.generated_statement.attached?
+              .d-inline-flex.align-items-center.gap-1
+                %span.mi.md-18.text-secondary description
+                = link_to @problem.generated_statement.filename.to_s, download_by_type_problem_path(@problem, 'generated_statement'), target: '_blank', data: {turbo: false}, class: 'text-decoration-none'
+            - else
+              %span.text-secondary.fst-italic No PDF generated yet.
+
+            -# Delete button references the hidden form below via HTML5
+            -# `form=` attr, so the button can live inside this
+            -# simple_form_for without producing illegal nested <form> tags.
+            -# To force a fresh PDF without changing description, edit and
+            -# resave (any description change re-fires the auto-generation).
+            - if @problem.generated_statement.attached?
+              %button.btn.btn-sm.btn-outline-danger.d-inline-flex.align-items-center.gap-1{type: 'submit', form: 'pdf-delete-form'}
+                %span.mi.md-18 delete
+                Delete
+
         = form.button :submit, class: 'btn btn-primary me-2'
+
+  -# Hidden form for the PDF delete action — lives OUTSIDE simple_form_for
+  -# so the visible button inside the Description tab (which references it
+  -# by HTML5 `form="…"` attribute) doesn't produce nested <form> tags
+  -# (HTML disallows that; browsers handle the malformed DOM inconsistently).
+  - if @problem.generated_statement.attached?
+    = form_with url: delete_by_type_problem_path(@problem, 'generated_statement'), method: :delete, html: {id: 'pdf-delete-form', class: 'd-none', data: {turbo: true, 'turbo-confirm': 'Delete the generated PDF? This cannot be undone.'}} do
+      -# CSRF token + `_method=delete` are auto-added; body intentionally empty.
+
   .tab-content
     %div#hint.tab-pane.fade.my-3{class: (' show active ' if @active_problem_tab == '#hint'), data: {controller: 'children-select'}}
-      -# dataset selector
-      = turbo_frame_tag :hint_select do
-        = render partial: 'hint_select', locals: {ds: @problem.live_dataset, problem: @problem}
-      -# dataset form
-      = turbo_frame_tag :hint_detail, src: edit_problem_hint_index_path(@problem,@problem.hints.first)
+      %section.mb-4
+        %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Hints
+        -# hint selector (dropdown + Add/Delete row)
+        = turbo_frame_tag :hint_select do
+          = render partial: 'hint_select', locals: {ds: @problem.live_dataset, problem: @problem}
+        -# hint detail editor (lazy-loaded for the selected hint)
+        = turbo_frame_tag :hint_detail, src: edit_problem_hint_index_path(@problem,@problem.hints.first)
   = form_with url: quick_add_testcase_problem_path(problem), method: :post, id: 'quick_testcase_form', data: { turbo: true } do
     -# empty block
 

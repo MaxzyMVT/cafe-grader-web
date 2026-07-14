@@ -1,88 +1,138 @@
-%h1 Account Setting
-.row
-  .col-md-6
-    = simple_form_for @current_user, url: update_self_users_path, html: { id: 'user-settings-form' } do |f|
-      = f.association :default_language, collection: Language.all, include_blank: '-- No default language --'.html_safe
-      - if GraderConfiguration['system.theme_selector_enabled']
-        = f.input :theme, collection: User::THEMES.map { |t| [t.titleize, t] }, include_blank: false, label: 'UI Theme', hint: 'Choose your preferred visual theme for the grader interface.'
-      = f.input :password
-      = f.input :password_confirmation
-      = f.button :submit, class: 'btn btn-primary'
+.d-flex.flex-column.gap-1.mb-4
+  %small.text-secondary.text-uppercase.fw-bold.ls-1 Account
+  %h2.fw-bold.text-dark.mb-0 Profile &amp; Settings
 
-- if GraderConfiguration['system.theme_selector_enabled']
-  .row.mt-5
-    .col-md-12
-      %h4.fw-bold.text-secondary.mb-3 Theme Preview
-      .d-flex.flex-wrap.gap-3
-        - User::THEMES.each do |theme_name|
-          - is_active = (@current_user.theme || 'default') == theme_name
-          .card.theme-preview-card.shadow-sm{style: 'width: 180px; cursor: pointer; transition: all 0.2s ease-in-out; border-radius: 12px; overflow: hidden;', class: (is_active ? 'border-primary border-2 shadow' : ''), onclick: "document.getElementById('user_theme').value = '#{theme_name}'; document.body.dataset.theme = '#{theme_name}'; document.getElementById('user-settings-form').requestSubmit();"}
-            .card-body.text-center.py-3
-              - case theme_name
-              - when 'default'
-                %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #0074d9, #5566bb);'}
-                %small.fw-bold Default
-                %br
-                %small.text-muted Classic Blue
-              - when 'dark'
-                %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid #2d2d44;'}
-                %small.fw-bold Dark
-                %br
-                %small.text-muted Deep Midnight
-              - when 'premium'
-                %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #8b5cf6, #7c3aed, #0c0c1d);'}
-                %small.fw-bold Premium
-                %br
-                %small.text-muted Luxury Glass
-              - when 'ocean'
-                %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #f0f9ff, #0891b2); border: 1px solid #bae6fd;'}
-                %small.fw-bold Ocean
-                %br
-                %small.text-muted Calm Waters
-              - when 'solarized'
-                %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #fdf6e3, #b58900); border: 1px solid #eee8d5;'}
-                %small.fw-bold Solarized
-                %br
-                %small.text-muted Warm Paper
-              - when 'space_legacy'
-                %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #0A0A1A, #6C63E8, #FAC765); border: 1px solid #1E1B3A;'}
-                %small.fw-bold Space Legacy
-                %br
-                %small.text-muted Void & Stars
-            - if is_active
-              .card-footer.bg-primary.text-white.text-center.py-1.border-0
-                %small.fw-bold Active
-            - else
-              .card-footer.bg-transparent.text-center.py-1.border-0
-                %small.text-muted Select
+.row.gx-4{data: {controller: 'init-ui-component'}}
+  -# ---------- Identity card & Groups (read-only) ----------
+  .col-lg-4
+    .card.shadow-sm.mb-4
+      .card-body.text-center.p-4
+        - initials = @user.full_name.to_s.split.map { |s| s[0] }.first(2).join.upcase
+        .rounded-circle.bg-primary-subtle.text-primary.d-inline-flex.align-items-center.justify-content-center.mb-3{style: 'width: 88px; height: 88px;'}
+          %span.fw-bold{style: 'font-size: 2rem;'}= initials.presence || '?'
+        %h5.fw-bold.mb-1= @user.full_name
+        .mb-3
+          %span.badge.bg-light.text-dark.border.font-monospace= @user.login
 
-- enabled_groups = @current_user.groups.joins(:groups_users).where(groups: { enabled: true }, groups_users: { enabled: true }).distinct
-- if enabled_groups.any?
-  .row.mt-5
-    .col-md-6
-      %h4.fw-bold.text-secondary.mb-3 Your Groups
-      .card.shadow-sm
+        %hr.my-3
+
+        %dl.row.text-start.small.mb-0.g-2
+          %dt.col-5.text-secondary.fw-medium Email
+          %dd.col-7.text-break.mb-0= @user.email.presence || content_tag(:span, '— none —', class: 'text-muted')
+          %dt.col-5.text-secondary.fw-medium Default language
+          %dd.col-7.mb-0= @user.default_language&.pretty_name || content_tag(:span, '— not set —', class: 'text-muted')
+          %dt.col-5.text-secondary.fw-medium Member since
+          %dd.col-7.mb-0= @user.created_at ? @user.created_at.strftime('%-d %b %Y') : '—'
+
+    - enabled_groups = @user.groups.joins(:groups_users).where(groups: { enabled: true }, groups_users: { enabled: true }).distinct
+    - if enabled_groups.any?
+      .card.shadow-sm.mb-4
+        .card-header.bg-transparent.py-3
+          %h6.fw-bold.text-dark.mb-0.d-flex.align-items-center
+            = mdi('group', 'me-2 text-secondary')
+            Your Groups
         %ul.list-group.list-group-flush
           - enabled_groups.each do |group|
-            %li.list-group-item.d-flex.align-items-center.justify-content-between.p-3
-              .d-flex.align-items-center
-                %span.mi.me-2.text-secondary group
-                %span{id: "group-name-text-#{group.id}", class: 'fw-bold text-dark'}= group.name
+            %li.list-group-item.d-flex.flex-column.gap-2.p-3
+              .d-flex.align-items-center.justify-content-between.w-100
+                .d-flex.align-items-center
+                  %span.mi.me-2.text-secondary group
+                  %span{id: "group-name-text-#{group.id}", class: 'fw-bold text-dark'}= group.name
                 - if group.allow_user_change_name?
                   %button.btn.btn-sm.btn-link.p-0.ms-2{type: 'button', onclick: "toggleGroupRenameForm(#{group.id})", title: 'Rename Group'}
                     %span.mi.md-18 edit
               - if group.allow_user_change_name?
-                = form_with url: rename_group_users_path, method: :post, class: 'd-none gap-2 align-items-center mb-0', id: "group-rename-form-#{group.id}" do |f|
+                = form_with url: rename_group_users_path, method: :post, class: 'd-none gap-2 align-items-center mb-0 mt-2 w-100', id: "group-rename-form-#{group.id}" do |f|
                   = hidden_field_tag :group_id, group.id
-                  = text_field_tag :new_name, group.name, class: 'form-control form-control-sm', required: true, style: 'width: 200px;'
+                  = text_field_tag :new_name, group.name, class: 'form-control form-control-sm', required: true, style: 'width: 150px;'
                   %button.btn.btn-sm.btn-primary{type: 'submit'} Save
                   %button.btn.btn-sm.btn-outline-secondary{type: 'button', onclick: "toggleGroupRenameForm(#{group.id})"} Cancel
+
+  -# ---------- Settings form ----------
+  .col-lg-8
+    = simple_form_for @user, url: update_self_users_path, html: { id: 'user-settings-form' } do |f|
+      -# Preferences
+      .card.shadow-sm.mb-4
+        .card-body.p-4
+          %h6.fw-bold.text-dark.mb-1.d-flex.align-items-center
+            = mdi('tune', 'me-2 text-secondary')
+            Preferences
+          .text-secondary.small.mb-3 Defaults applied when you open a problem.
+          = f.association :default_language, collection: Language.all, include_blank: '— No default language —'.html_safe, label: 'Default language'
+          - if GraderConfiguration['system.theme_selector_enabled']
+            = f.input :theme, collection: User::THEMES.map { |t| [t.titleize, t] }, include_blank: false, label: 'UI Theme', hint: 'Choose your preferred visual theme for the grader interface.', input_html: { id: 'user_theme' }
+
+      -# Theme Previews
+      - if GraderConfiguration['system.theme_selector_enabled']
+        .card.shadow-sm.mb-4
+          .card-body.p-4
+            %h6.fw-bold.text-dark.mb-3.d-flex.align-items-center
+              = mdi('palette', 'me-2 text-secondary')
+              Theme Preview
+            .d-flex.flex-wrap.gap-3
+              - User::THEMES.each do |theme_name|
+                - is_active = (@user.theme || 'default') == theme_name
+                .card.theme-preview-card.shadow-sm{style: 'width: 180px; cursor: pointer; transition: all 0.2s ease-in-out; border-radius: 12px; overflow: hidden;', class: (is_active ? 'border-primary border-2 shadow' : ''), onclick: "document.getElementById('user_theme').value = '#{theme_name}'; document.body.dataset.theme = '#{theme_name}'; document.getElementById('user-settings-form').requestSubmit();"}
+                  .card-body.text-center.py-3
+                    - case theme_name
+                    - when 'default'
+                      %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #0074d9, #5566bb);'}
+                      %small.fw-bold Default
+                      %br
+                      %small.text-muted Classic Blue
+                    - when 'dark'
+                      %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid #2d2d44;'}
+                      %small.fw-bold Dark
+                      %br
+                      %small.text-muted Deep Midnight
+                    - when 'premium'
+                      %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #8b5cf6, #7c3aed, #0c0c1d);'}
+                      %small.fw-bold Premium
+                      %br
+                      %small.text-muted Luxury Glass
+                    - when 'ocean'
+                      %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #f0f9ff, #0891b2); border: 1px solid #bae6fd;'}
+                      %small.fw-bold Ocean
+                      %br
+                      %small.text-muted Calm Waters
+                    - when 'solarized'
+                      %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #fdf6e3, #b58900); border: 1px solid #eee8d5;'}
+                      %small.fw-bold Solarized
+                      %br
+                      %small.text-muted Warm Paper
+                    - when 'space_legacy'
+                      %div.rounded.mb-2{style: 'height: 40px; background: linear-gradient(135deg, #0A0A1A, #6C63E8, #FAC765); border: 1px solid #1E1B3A;'}
+                      %small.fw-bold Space Legacy
+                      %br
+                      %small.text-muted Void & Stars
+                  - if is_active
+                    .card-footer.bg-primary.text-white.text-center.py-1.border-0
+                      %small.fw-bold Active
+                  - else
+                    .card-footer.bg-transparent.text-center.py-1.border-0
+                      %small.text-muted Select
+
+      -# Security
+      .card.shadow-sm.mb-4
+        .card-body.p-4
+          %h6.fw-bold.text-dark.mb-1.d-flex.align-items-center
+            = mdi('lock', 'me-2 text-secondary')
+            Change password
+          .text-secondary.small.mb-3 Leave both fields blank to keep your current password.
+          .row
+            .col-md-6
+              = f.input :password, label: 'New password', required: false, input_html: {autocomplete: 'new-password'}
+            .col-md-6
+              = f.input :password_confirmation, label: 'Confirm new password', required: false, input_html: {autocomplete: 'new-password'}
+
+      .d-flex.justify-content-end
+        = f.button :submit, 'Save changes', class: 'btn btn-primary px-4'
 
 :javascript
   function toggleGroupRenameForm(groupId) {
     const textSpan = document.getElementById(`group-name-text-${groupId}`);
     const form = document.getElementById(`group-rename-form-${groupId}`);
-    const editBtn = textSpan.nextElementSibling;
+    const editBtn = textSpan.nextElementSibling || textSpan.parentElement.nextElementSibling;
     
     if (form && form.classList.contains('d-none')) {
       form.classList.remove('d-none');

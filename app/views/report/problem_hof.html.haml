@@ -4,7 +4,7 @@
     %h2.fw-bold.text-dark.mb-0 Hall of Fame
   .d-flex.align-items-center.gap-2
     - if @current_user&.admin?
-      = link_to problem_hof_recompute_report_path, class: 'btn btn-sm bg-white shadow-sm border-0 text-secondary d-inline-flex align-items-center justify-content-center', data: { turbo: true, 'turbo-method': 'post', 'bs-toggle': 'tooltip' }, title: 'Recompute statistics' do
+      = link_to problem_hof_recompute_report_path, class: 'btn btn-sm bg-white shadow-sm border-0 text-secondary d-inline-flex align-items-center justify-content-center', data: { turbo: true, turbo_method: 'post', bs_toggle: 'tooltip', bs_title: 'Recompute statistics' } do
         %span.mi sync
     - if GraderConfiguration['system.scoreboard_enabled']
       - level = GraderConfiguration['system.scoreboard_view_level'] || 'user'
