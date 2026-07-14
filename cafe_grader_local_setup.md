@@ -22,47 +22,13 @@ After running the script, complete the manual steps it outputs (credentials, dat
 
 ## 2. Manual Setup (Alternative)
 
-If you prefer to set up manually instead of using the script, follow these steps.
-
-### Prerequisites Installation (Ubuntu/WSL)
-If you are running locally on Ubuntu (or Windows Subsystem for Linux), you need to install the core dependencies first:
-
-1. **System Packages & MySQL**:
-   ```bash
-   sudo apt update
-   sudo apt install -y mysql-server libmysqlclient-dev git curl unzip libpq-dev
-   ```
-2. **Ruby (via rbenv)**:
-   ```bash
-   sudo apt update
-   sudo apt install -y git curl libssl-dev libreadline-dev zlib1g-dev autoconf bison build-essential libyaml-dev libncurses5-dev libffi-dev libgdbm-dev
-   
-   curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash
-   
-   # Add rbenv to your PATH in your shell configuration profile (e.g., ~/.bashrc):
-   echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
-   echo 'eval "$(rbenv init -)"' >> ~/.bashrc
-   source ~/.bashrc
-   
-   rbenv install 3.4.4
-   rbenv global 3.4.4
-   gem install bundler
-   ```
-
-### Setup Local Database
-1. **Install Ruby Gems**:
-   ```bash
-   bundle install
-   ```
-2. First, ensure MySQL is running locally:
-   ```bash
-   sudo service mysql start
-   ```
-3. Make sure your local database credentials (username/password) match those defined in `config/database.yml`, then run:
-   ```bash
-   bin/rails db:setup
-   ```
-   *This command creates the databases (like `grader` and `grader_queue`), loads the schema, and initializes them with seed data.*
+If you prefer to run the steps yourself instead of the script, `setup_local_wsl.sh` is
+the authoritative reference — read it top-to-bottom. In short it: installs MySQL + build
+deps, installs rbenv + Ruby 3.4.4 + bundler, copies the `config/*.SAMPLE` templates and
+patches `database.yml` for local dev, creates the `grader_user` MySQL account, runs
+`bundle install`, generates a matched `master.key` via `credentials:edit`, and runs
+`bin/rails db:prepare` (idempotent — safe to re-run). Do **not** copy
+`credentials.yml.SAMPLE` over a random `master.key`; that mismatches and crashes boot.
 
 ## 3. Start the Dev Server
 Open a terminal in the root folder and run:

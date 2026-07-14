@@ -222,26 +222,9 @@ A backup you've never checked is just a hope. After your first run:
 
 ## 9. Putting a backup back (restore)
 
-You hopefully won't need this often. The idea: copy a backup file from your computer **up** to a
-server, then load it. Replace `<file>`, `<server-ip>`, and `yourkey` with your real values.
-
-**Restore the database:**
-```bash
-scp -i yourkey ~/cafe-grader-backups/web-db/db_<time>.sql.gz root@<server-ip>:/tmp/
-ssh -i yourkey root@<server-ip> "zcat /tmp/db_<time>.sql.gz | mysql"
-```
-
-**Restore settings + uploaded files:**
-```bash
-scp -i yourkey ~/cafe-grader-backups/web-db/files_<time>.tar.gz root@<server-ip>:/tmp/
-ssh -i yourkey root@<server-ip> "tar -C /home/grader/cafe_grader/web -xzf /tmp/files_<time>.tar.gz"
-```
-
-**Restore a worker:**
-```bash
-scp -i yourkey ~/cafe-grader-backups/<worker-ip>/worker_<time>.tar.gz root@<worker-ip>:/tmp/
-ssh -i yourkey root@<worker-ip> "tar -C /home/grader/cafe_grader/web -xzf /tmp/worker_<time>.tar.gz"
-```
+Restore is documented once, in **[restore-guide.md](restore-guide.md)** — it covers the
+web/DB database, config + uploaded files, and worker nodes, with the exact paths and the
+`master.key` caveat. (Kept in one place so the commands don't drift between two files.)
 
 ---
 

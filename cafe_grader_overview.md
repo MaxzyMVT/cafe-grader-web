@@ -32,17 +32,10 @@ Additional components:
 
 ## 3. Technology Stack
 
-| Component | Technology |
-|---|---|
-| Operating System | Ubuntu 22.04 LTS |
-| Framework | Ruby on Rails 8.0.0 |
-| Language | Ruby 3.4.4 |
-| Database | MySQL 8.0+ |
-| Background Jobs | Solid Queue |
-| Caching | Solid Cache |
-| Asset Pipeline | Propshaft, Importmap |
-| CSS Preprocessor | dartsass-rails |
-| Sandboxing | `ioi/isolate` (requires Linux cgroups v2) |
+Ruby on Rails 8.0.0 (Ruby 3.4.4) on Ubuntu 22.04 LTS, MySQL 8.0+, Solid Queue/Cache,
+Propshaft + Importmap + dartsass-rails, and `ioi/isolate` for sandboxing. The full,
+authoritative stack (with the MySQL-8-only rationale) lives in the root
+[README](README.md#tech-stack-v4x) — see there to avoid a second copy drifting.
 
 ---
 
