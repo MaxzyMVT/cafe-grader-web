@@ -140,17 +140,17 @@ You'll see progress like `==> web+db : ...`, `pull db_....sql.gz`, ending with `
 
 > **If you get an error about the database** (e.g. "produced no backup"), your DB needs a login. Add it:
 > ```bash
-> DB_USER=grader DB_PASS=yourpassword ./pull-backup.sh <web-db-ip> <worker1-ip> <worker2-ip>
+> DB_USER=grader_user DB_PASS=yourpassword ./pull-backup.sh <web-db-ip> <worker1-ip> <worker2-ip>
 > ```
 
 > **If you see "app dir not found", or only the `db_*.sql.gz` appears with no `files_*.tar.gz`:** the
 > script couldn't find where Cafe-Grader lives on the servers, so `config/` (including `master.key`),
 > `storage/`, and the workers were skipped. Find the real path, then pass it with `APP_DIR`:
 > ```bash
-> # 1. find it (replace KEY with your key file):
-> ssh -i KEY root@<web-db-ip> "find / -maxdepth 6 -type d -name cafe-grader-web 2>/dev/null"
+> # 1. find it (replace KEY with your key file; installer layout is cafe_grader/web):
+> ssh -i KEY root@<web-db-ip> "find / -maxdepth 6 -type d -path '*/cafe_grader/web' 2>/dev/null"
 > # 2. back up again, giving that path:
-> APP_DIR=/real/path/to/cafe-grader-web ./pull-backup.sh <web-db-ip> <worker1-ip> <worker2-ip>
+> APP_DIR=/home/grader/cafe_grader/web ./pull-backup.sh <web-db-ip> <worker1-ip> <worker2-ip>
 > ```
 > (If the servers keep the app in different paths, run the script once per server with the matching
 > `APP_DIR`.)
@@ -234,13 +234,13 @@ ssh -i yourkey root@<server-ip> "zcat /tmp/db_<time>.sql.gz | mysql"
 **Restore settings + uploaded files:**
 ```bash
 scp -i yourkey ~/cafe-grader-backups/web-db/files_<time>.tar.gz root@<server-ip>:/tmp/
-ssh -i yourkey root@<server-ip> "tar -C /home/grader/cafe-grader-web -xzf /tmp/files_<time>.tar.gz"
+ssh -i yourkey root@<server-ip> "tar -C /home/grader/cafe_grader/web -xzf /tmp/files_<time>.tar.gz"
 ```
 
 **Restore a worker:**
 ```bash
 scp -i yourkey ~/cafe-grader-backups/<worker-ip>/worker_<time>.tar.gz root@<worker-ip>:/tmp/
-ssh -i yourkey root@<worker-ip> "tar -C /home/grader/cafe-grader-web -xzf /tmp/worker_<time>.tar.gz"
+ssh -i yourkey root@<worker-ip> "tar -C /home/grader/cafe_grader/web -xzf /tmp/worker_<time>.tar.gz"
 ```
 
 ---
@@ -252,7 +252,7 @@ ssh -i yourkey root@<worker-ip> "tar -C /home/grader/cafe-grader-web -xzf /tmp/w
 | `That does not look like a private key` | You pasted the wrong text. Paste the full `-----BEGIN ... PRIVATE KEY-----` block. |
 | `Permission denied (publickey)` | Wrong key, or this key isn't allowed on that server. |
 | `Host key verification failed` | Connect once by hand to approve the server: `ssh -i yourkey root@<ip>` and type `yes`. |
-| `web+db produced no backup` | The database needs a login — add `DB_USER=grader DB_PASS=...` (Section 6). |
+| `web+db produced no backup` | The database needs a login — add `DB_USER=grader_user DB_PASS=...` (Section 6). |
 | `nothing to back up - app dir not found` | Cafe-Grader is installed in an unusual place on that server. Tell me the real path and I'll add it. |
 | The scheduled (cron) backup didn't run | Your computer was off/asleep at that time, or the path/IPs in the cron line are wrong. Check `~/cafe-backup.log`. |
 

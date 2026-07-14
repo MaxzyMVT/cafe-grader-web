@@ -1,0 +1,9 @@
+# Shell scripts run on Linux servers (deploy/install) and in WSL. They MUST use LF.
+# With CRLF, Linux bash fails to parse them:
+#   `set: pipefail: invalid option name`, `syntax error near unexpected token $'{\r'`.
+# eol=lf forces LF in the working tree even on a Windows checkout, and guarantees LF
+# in the committed blob regardless of a contributor's core.autocrlf setting.
+*.sh text eol=lf
+
+# Config templates consumed by the shell installers / Ruby are safest as LF too.
+*.SAMPLE text eol=lf

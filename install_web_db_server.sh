@@ -9,7 +9,11 @@
 # Worker nodes (install_worker_server.sh) connect to MySQL on this server.
 # Do NOT run grader worker processes on this server.
 
-set -e
+# -e: abort on error  -u: error on unset var  -o pipefail: a pipe fails if any stage fails.
+# NOTE: command substitutions that end in `| head`/`| grep` and are validated by a
+# later `[ -z ... ]` check are guarded with `|| true` so pipefail doesn't abort on the
+# expected non-zero (no match / SIGPIPE from head closing the pipe early).
+set -euo pipefail
 
 # ---------------------------------------------------------------
 # Configuration — edit before running if needed
@@ -207,7 +211,7 @@ RBENV_GEM="$(rbenv which gem)"
 
 # Build Apache module as current user (inherits rbenv environment).
 PASSENGER_INSTALL=$("$RBENV_GEM" contents passenger 2>/dev/null \
-  | grep "passenger-install-apache2-module$" | head -1)
+  | grep "passenger-install-apache2-module$" | head -1) || true
 if [ -n "$PASSENGER_INSTALL" ]; then
   "$RBENV_RUBY" "$PASSENGER_INSTALL" --auto --languages ruby
 else
@@ -218,7 +222,7 @@ PASSENGER_ROOT=$(passenger-config --root)
 # Use rbenv's resolved ruby path — `which ruby` returns the shim and Apache
 # needs the real absolute binary path to start workers correctly.
 PASSENGER_RUBY="$RBENV_RUBY"
-PASSENGER_MODULE=$(find "$PASSENGER_ROOT" -name mod_passenger.so 2>/dev/null | head -1)
+PASSENGER_MODULE=$(find "$PASSENGER_ROOT" -name mod_passenger.so 2>/dev/null | head -1) || true
 
 if [ -z "$PASSENGER_MODULE" ]; then
   echo "  ERROR: mod_passenger.so not found. Passenger build may have failed."
@@ -287,7 +291,10 @@ if ! sudo apache2ctl configtest 2>&1; then
 fi
 
 sudo systemctl restart apache2
-echo "  Apache + Passenger configured."
+# Enable on boot explicitly (apt enables them by default, but make the boot
+# contract unambiguous so a reboot always serves the app + accepts worker DB conns).
+sudo systemctl enable apache2 mysql
+echo "  Apache + Passenger configured (apache2 + mysql enabled on boot)."
 
 # ---------------------------------------------------------------
 # 8. Solid Queue systemd service
@@ -367,6 +374,10 @@ echo "  Change the password immediately after first login."
 echo ""
 echo "  Note this server's IP address — you will need it when"
 echo "  running install_worker_server.sh on each worker node."
+echo "  Give each worker a UNIQUE worker id (1, 2, 3, ...):"
+echo "    worker 1:  bash install_worker_server.sh <this-server-ip> 1"
+echo "    worker 2:  bash install_worker_server.sh <this-server-ip> 2"
+echo "  (Reusing an id makes two workers collide and thrash the watchdog.)"
 echo ""
 echo "  ONE STEP REQUIRED:"
 echo ""

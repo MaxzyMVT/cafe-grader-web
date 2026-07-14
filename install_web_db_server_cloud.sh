@@ -9,7 +9,11 @@
 # Worker nodes (install_worker_server.sh) connect to MySQL on this server.
 # Do NOT run grader worker processes on this server.
 
-set -e
+# -e: abort on error  -u: error on unset var  -o pipefail: a pipe fails if any stage fails.
+# NOTE: command substitutions that end in `| head`/`| grep` and are validated by a
+# later `[ -z ... ]` check are guarded with `|| true` so pipefail doesn't abort on the
+# expected non-zero (no match / SIGPIPE from head closing the pipe early).
+set -euo pipefail
 
 # ---------------------------------------------------------------
 # Configuration — edit before running if needed
@@ -35,7 +39,7 @@ detect_server_ip() {
   ip=$(curl -sf --max-time 2 -H "Metadata: true" \
     "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/publicIpAddress?api-version=2021-02-01&format=text" \
     2>/dev/null) && echo "$ip" && return
-  ip=$(ip -4 addr show scope global 2>/dev/null | awk '/inet/{print $2}' | cut -d/ -f1 | head -1)
+  ip=$(ip -4 addr show scope global 2>/dev/null | awk '/inet/{print $2}' | cut -d/ -f1 | head -1) || true
   echo "${ip:-<your-server-IP>}"
 }
 ufw_allow_if_active() {
@@ -175,16 +179,22 @@ bundle install
 # ---------------------------------------------------------------
 # 5. Rails master key + credentials
 # ---------------------------------------------------------------
-echo "[5/9] Generating Rails master key..."
-if [ ! -f config/master.key ]; then
-  cp config/credentials.yml.SAMPLE config/credentials.yml.enc
-  openssl rand -hex 32 > config/master.key
-  chmod 600 config/master.key
-  echo "  master.key generated."
-  echo "  *** BACK UP $APP_DIR/config/master.key ***"
-else
-  echo "  master.key already exists, skipping."
-fi
+echo "[5/9] Generating Rails master key and credentials..."
+
+# Remove any stale/mismatched key+credentials pair. Copying credentials.yml.SAMPLE
+# alongside a fresh `openssl rand` master.key produces a MISMATCH — the SAMPLE was
+# encrypted with a different key, so it cannot be decrypted. That crashes db:setup
+# and every boot with:
+#   ActiveSupport::MessageEncryptor::InvalidMessage: missing separator
+# because Rails decrypts credentials during environment load (config/environment.rb:5).
+# The fix is to let Rails generate a MATCHED key+credentials pair from scratch via
+# `credentials:edit`; EDITOR=true completes it non-interactively.
+rm -f config/master.key config/credentials.yml.enc
+
+EDITOR=true bundle exec rails credentials:edit
+chmod 600 config/master.key
+echo "  master.key and credentials.yml.enc generated (matched pair)."
+echo "  *** BACK UP $APP_DIR/config/master.key ***"
 
 # ---------------------------------------------------------------
 # 6. Database setup + asset compilation
@@ -229,7 +239,7 @@ RBENV_GEM="$(rbenv which gem)"
 
 # Build Apache module as current user (inherits rbenv environment).
 PASSENGER_INSTALL=$("$RBENV_GEM" contents passenger 2>/dev/null \
-  | grep "passenger-install-apache2-module$" | head -1)
+  | grep "passenger-install-apache2-module$" | head -1) || true
 if [ -n "$PASSENGER_INSTALL" ]; then
   "$RBENV_RUBY" "$PASSENGER_INSTALL" --auto --languages ruby
 else
@@ -240,7 +250,7 @@ PASSENGER_ROOT=$(passenger-config --root)
 # Use rbenv's resolved ruby path — `which ruby` returns the shim and Apache
 # needs the real absolute binary path to start workers correctly.
 PASSENGER_RUBY="$RBENV_RUBY"
-PASSENGER_MODULE=$(find "$PASSENGER_ROOT" -name mod_passenger.so 2>/dev/null | head -1)
+PASSENGER_MODULE=$(find "$PASSENGER_ROOT" -name mod_passenger.so 2>/dev/null | head -1) || true
 
 if [ -z "$PASSENGER_MODULE" ]; then
   echo "  ERROR: mod_passenger.so not found. Passenger build may have failed."
@@ -315,7 +325,10 @@ if ! sudo apache2ctl configtest 2>&1; then
 fi
 
 sudo systemctl restart apache2
-echo "  Apache + Passenger configured."
+# Enable on boot explicitly (apt enables them by default, but make the boot
+# contract unambiguous so a reboot always serves the app + accepts worker DB conns).
+sudo systemctl enable apache2 mysql
+echo "  Apache + Passenger configured (apache2 + mysql enabled on boot)."
 
 # Open ports in ufw if active; remind cloud users about security groups.
 ufw_allow_if_active 80
@@ -406,7 +419,10 @@ echo "    - Port 80   (HTTP — web interface)"
 echo "    - Port 3306 (MySQL — worker nodes only, restrict source IPs)"
 echo ""
 echo "  This server's IP for worker node setup: $FINAL_IP"
-echo "  Run on each worker:  bash install_worker_server.sh $FINAL_IP"
+echo "  Run on each worker with a UNIQUE worker id (1, 2, 3, ...):"
+echo "    worker 1:  bash install_worker_server.sh $FINAL_IP 1"
+echo "    worker 2:  bash install_worker_server.sh $FINAL_IP 2"
+echo "  (Reusing an id makes two workers collide and thrash the watchdog.)"
 echo ""
 echo "  ONE STEP REQUIRED:"
 echo ""

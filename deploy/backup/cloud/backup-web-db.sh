@@ -21,7 +21,7 @@ set -euo pipefail
 # ----------------------------------------------------------------------------
 # CONFIG — edit these for the server, or override via environment variables.
 # ----------------------------------------------------------------------------
-APP_DIR="${APP_DIR:-/home/grader/cafe-grader-web}"   # Rails app root on the server
+APP_DIR="${APP_DIR:-/home/grader/cafe_grader/web}"   # Rails app root (matches the installer layout)
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/cafe-grader}"  # local staging dir
 
 # Backup stream label -> goes into the filename and scopes local pruning, so the
@@ -33,7 +33,7 @@ BACKUP_LABEL="${BACKUP_LABEL:-full}"
 # MySQL credentials. Prefer a ~/.my.cnf (chmod 600) with [client] user/password
 # and leave DB_PASS empty. If DB_PASS is set, a temp 0600 defaults-file is used
 # so the password never appears in `ps`.
-DB_USER="${DB_USER:-grader}"
+DB_USER="${DB_USER:-grader_user}"   # matches the DB user the installers create
 DB_PASS="${DB_PASS:-}"
 DB_SOCKET="${DB_SOCKET:-/var/run/mysqld/mysqld.sock}"
 DBS="${DBS:-grader grader_queue}"

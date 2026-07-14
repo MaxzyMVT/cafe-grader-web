@@ -18,10 +18,10 @@ set -euo pipefail
 # ============================================================================
 # AUTO-FILLED DEFAULTS — edit here once if needed, or override with env vars.
 # ============================================================================
-APP_DIR="${APP_DIR:-/home/grader/cafe-grader-web}"          # where Cafe-Grader lives
+APP_DIR="${APP_DIR:-/home/grader/cafe_grader/web}"         # where Cafe-Grader lives (installer layout)
 OBS_BUCKET="${OBS_BUCKET:-cafe-grader-backups}"             # OBS bucket for backups
 OBS_ENDPOINT="${OBS_ENDPOINT:-obs.ap-southeast-2.myhuaweicloud.com}"
-DB_USER="${DB_USER:-grader}"
+DB_USER="${DB_USER:-grader_user}"                          # matches the DB user the installers create
 
 # Secrets — leave BLANK to reuse an already-configured obsutil / existing ~/.my.cnf.
 # To set them on the fly:  sudo OBS_AK=.. OBS_SK=.. DB_PASS=.. ./install.sh web-db

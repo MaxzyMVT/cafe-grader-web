@@ -19,8 +19,8 @@ set -euo pipefail
 # ----------------------------------------------------------------------------
 # CONFIG — edit per worker, or override via environment variables.
 # ----------------------------------------------------------------------------
-APP_DIR="${APP_DIR:-/home/grader/cafe-grader-web}"   # Rails app root (has config/worker.yml)
-JUDGE_DIR="${JUDGE_DIR:-/home/grader/cafe-grader-web/../judge}"  # judge_path; '' to skip
+APP_DIR="${APP_DIR:-/home/grader/cafe_grader/web}"   # Rails app root (matches the installer layout)
+JUDGE_DIR="${JUDGE_DIR:-/home/grader/cafe_grader/judge}"  # judge_path (sibling of web/); '' to skip
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/cafe-grader}"
 
 # Exclude transient/regenerable judge subdirs from the archive.

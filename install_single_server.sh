@@ -5,7 +5,11 @@
 #
 # Usage: bash install_single_server.sh
 
-set -e
+# -e: abort on error  -u: error on unset var  -o pipefail: a pipe fails if any stage fails.
+# NOTE: command substitutions that end in `| head`/`| grep` and are validated by a
+# later `[ -z ... ]` check are guarded with `|| true` so pipefail doesn't abort on the
+# expected non-zero (no match / SIGPIPE from head closing the pipe early).
+set -euo pipefail
 
 # ---------------------------------------------------------------
 # Configuration — edit before running if needed
@@ -28,6 +32,33 @@ echo "============================================================"
 echo " Cafe-Grader Single Server Installation (Ubuntu 22.04+)"
 echo " CPU cores: $CPU_CORES  |  Grader workers: $WORKER_COUNT"
 echo "============================================================"
+
+# ---------------------------------------------------------------
+# RAM headroom check (advisory)
+# ---------------------------------------------------------------
+# Swap is disabled later (isolate needs a hard RAM cap). With no swap cushion the
+# host must physically fit every concurrent sandbox PLUS the base system, or the
+# OOM killer strikes — possibly MySQL or a grader, not just the offending box.
+# Estimate peak = WORKER_COUNT boxes * per-box budget + base-system overhead.
+PER_BOX_MB=1024        # generous per-submission budget (dataset memory_limit default 512)
+SYS_OVERHEAD_MB=2048   # MySQL + Rails + Apache co-located on this single server
+RAM_KB=$(awk '/^MemTotal:/{print $2}' /proc/meminfo 2>/dev/null || true)
+RAM_MB=$(( ${RAM_KB:-0} / 1024 ))
+NEED_MB=$(( WORKER_COUNT * PER_BOX_MB + SYS_OVERHEAD_MB ))
+if [ "$RAM_MB" -eq 0 ]; then
+  echo "  (could not read /proc/meminfo — skipping RAM headroom check)"
+elif [ "$RAM_MB" -lt "$NEED_MB" ]; then
+  echo "  ####################################################################"
+  echo "  # WARNING: low RAM for $WORKER_COUNT grader worker(s) with swap disabled."
+  echo "  #   physical RAM : ${RAM_MB} MB"
+  echo "  #   recommended  : ${NEED_MB} MB  (${WORKER_COUNT} x ${PER_BOX_MB}MB boxes + ${SYS_OVERHEAD_MB}MB system)"
+  echo "  # Without swap the OOM killer may kill MySQL or a grader under load."
+  echo "  # Mitigate: add RAM, lower WORKER_COUNT near the top of this script,"
+  echo "  # or cap each problem's memory_limit. Continuing anyway."
+  echo "  ####################################################################"
+else
+  echo "  RAM check OK: ${RAM_MB} MB >= ${NEED_MB} MB recommended for $WORKER_COUNT worker(s)."
+fi
 
 # ---------------------------------------------------------------
 # 1. System packages
@@ -177,7 +208,14 @@ if [ -f "$ISOLATE_SVC" ]; then
   sudo ln -sf "$ISOLATE_SVC" /etc/systemd/system/isolate.service
   echo "  isolate.service symlinked from $ISOLATE_SVC"
 else
-  echo "  WARNING: $ISOLATE_SVC not found — isolate.service will not be installed."
+  echo "  ####################################################################"
+  echo "  # WARNING: $ISOLATE_SVC not found."
+  echo "  # isolate.service was NOT installed. Grading workers CANNOT sandbox"
+  echo "  # submissions without it — they will sit idle with no heartbeat."
+  echo "  # Fix before relying on grading: reinstall ioi/isolate, then"
+  echo "  #   sudo ln -sf <isolate>/systemd/isolate.service /etc/systemd/system/"
+  echo "  #   sudo systemctl enable --now isolate.service"
+  echo "  ####################################################################"
 fi
 
 sudo tee /etc/systemd/system/set-ioi-isolate.service > /dev/null <<'SVCEOF'
@@ -357,7 +395,7 @@ RBENV_BIN_DIR="$(dirname "$RBENV_RUBY")"
 
 # Locate the installer script inside the rbenv-managed passenger gem.
 PASSENGER_INSTALL=$("$RBENV_GEM" contents passenger 2>/dev/null \
-  | grep "passenger-install-apache2-module$" | head -1)
+  | grep "passenger-install-apache2-module$" | head -1) || true
 if [ -z "$PASSENGER_INSTALL" ]; then
   echo "  ERROR: passenger-install-apache2-module not found in gem contents."
   exit 1
@@ -371,9 +409,9 @@ fi
 # installed those resolve to the RVM passenger, not the rbenv one.
 RBENV_GEM_HOME="$("$RBENV_RUBY" -e 'puts Gem.dir')"
 PASSENGER_ROOT=$(find "$RBENV_GEM_HOME/gems" -maxdepth 1 -name "passenger-*" -type d 2>/dev/null \
-  | sort -V | tail -1)
+  | sort -V | tail -1) || true
 PASSENGER_RUBY="$RBENV_RUBY"
-PASSENGER_MODULE=$(find "$PASSENGER_ROOT" -name mod_passenger.so 2>/dev/null | head -1)
+PASSENGER_MODULE=$(find "$PASSENGER_ROOT" -name mod_passenger.so 2>/dev/null | head -1) || true
 
 if [ -z "$PASSENGER_ROOT" ]; then
   echo "  ERROR: Could not find passenger gem under rbenv gem home."
@@ -410,7 +448,7 @@ grep -q "^ServerName" /etc/apache2/apache2.conf || \
 
 # Detect the primary LAN/VM IP — works on VirtualBox, bare metal, and cloud.
 # Falls back to 127.0.0.1 if no non-loopback address is found.
-SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}') || true
 SERVER_IP="${SERVER_IP:-127.0.0.1}"
 
 sudo a2dissite 000-default 2>/dev/null || true
@@ -455,7 +493,10 @@ if ! sudo apache2ctl configtest 2>&1; then
 fi
 
 sudo systemctl restart apache2
-echo "  Apache + Passenger configured."
+# Enable on boot explicitly (apt enables them by default, but make the boot
+# contract unambiguous so a reboot always serves the app).
+sudo systemctl enable apache2 mysql
+echo "  Apache + Passenger configured (apache2 + mysql enabled on boot)."
 
 # Open port 80 in ufw if active (safe no-op if ufw is inactive or port already open).
 if sudo ufw status 2>/dev/null | grep -q "^Status: active"; then
@@ -525,12 +566,13 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 
-# 13b. Grader workers — Grader.restart() spawns detached child processes
-# that write to log/grader-N.txt and keep running independently.
-# This service fires Grader.restart() using the absolute rbenv ruby (no
-# login shell = no RVM) and then watches the log files so systemd has a
-# long-running foreground process to supervise. If the workers die the
-# tail exits, Restart=always re-fires Grader.restart() after 30s.
+# 13b. Grader workers — Grader.restart(N) spawns N detached child processes
+# that write to log/grader-N.txt, keep running independently, then returns.
+# Type=simple + RemainAfterExit=yes: systemd runs this one-shot restart command
+# via the absolute rbenv bundle (no login shell = no RVM interference) and then
+# treats the service as "active" after it exits. There is intentionally NO
+# Restart= directive — re-firing Grader.restart() would spawn duplicate workers;
+# dead workers are respawned by Grader.watchdog, run each minute by the whenever cron.
 sudo tee /etc/systemd/system/cafe_grader_workers.service > /dev/null <<EOF
 [Unit]
 Description=Cafe-Grader grader workers

@@ -101,9 +101,12 @@ fetch() {  # fetch <host> <localdir> <file>...
 
 # --- Check space before taking backup to prevent hitting 100% capacity -----------
 # Estimate backup size: database size (rough estimate ~100MB) + /storage directory size
+# Best-effort: only measurable if APP_DIR points at a path on THIS control box
+# (storage normally lives on the remote server, so this stays 0 in the usual pull
+# setup and the DB-size padding below carries the estimate).
 STORAGE_SIZE_KB=0
-if [ -d "/home/grader_admin/cafe_grader/web/storage" ]; then
-  STORAGE_SIZE_KB=$(du -s /home/grader_admin/cafe_grader/web/storage | awk '{print $1}')
+if [ -n "${APP_DIR:-}" ] && [ -d "${APP_DIR}/storage" ]; then
+  STORAGE_SIZE_KB=$(du -s "${APP_DIR}/storage" | awk '{print $1}')
 fi
 # Conservative estimated backup size in KB (compressed to ~50% average)
 ESTIMATED_BACKUP_KB=$(( (STORAGE_SIZE_KB + 204800) / 2 ))

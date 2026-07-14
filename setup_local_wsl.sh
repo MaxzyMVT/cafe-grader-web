@@ -8,7 +8,8 @@
 #
 # Usage: bash setup_local_wsl.sh
 
-set -e
+# -e: abort on error  -u: error on unset var  -o pipefail: a pipe fails if any stage fails.
+set -euo pipefail
 
 RUBY_VERSION="3.4.4"
 DB_USER="grader_user"
@@ -135,16 +136,24 @@ bundle exec rails dartsass:build
 # ---------------------------------------------------------------
 echo "[7/7] Generating Rails master key and setting up database..."
 
+# Generate a MATCHED master.key + credentials.yml.enc pair. Copying
+# credentials.yml.SAMPLE alongside a fresh `openssl rand` key produces a MISMATCH
+# (the SAMPLE was encrypted with a different key) and crashes on boot with
+# ActiveSupport::MessageEncryptor::InvalidMessage. `credentials:edit` writes a
+# matched pair; EDITOR=true completes it non-interactively.
 if [ ! -f config/master.key ]; then
-  cp config/credentials.yml.SAMPLE config/credentials.yml.enc
-  openssl rand -hex 32 > config/master.key
+  rm -f config/credentials.yml.enc
+  EDITOR=true bundle exec rails credentials:edit
   chmod 600 config/master.key
-  echo "  master.key generated."
+  echo "  master.key and credentials.yml.enc generated (matched pair)."
 else
   echo "  master.key already exists, skipping."
 fi
 
-bundle exec rails db:setup
+# db:prepare is idempotent: it creates + loads schema + seeds on first run, and
+# only runs pending migrations on subsequent runs. Unlike db:setup it does NOT
+# drop/reload existing tables, so re-running this script won't crash on foreign keys.
+bundle exec rails db:prepare
 echo "  Database ready."
 
 # ---------------------------------------------------------------
