@@ -1,15 +1,15 @@
 %header
-  %nav.navbar.navbar-dark.bg-primary.navbar-expand-md.shadow
+  %nav.navbar.navbar-dark.bg-primary.navbar-expand-xl.shadow
     .container-fluid
       %a.navbar-brand.d-flex.align-items-center.gap-2{href: list_main_path}
         = image_tag 'icon.svg', alt: '', height: 28, width: 28, class: 'rounded'
         %span.site-name-text= GraderConfiguration.site_name&.html_safe || 'MAIN'
 
-      -# Hamburger — mobile only, opens the offcanvas drawer
-      %button.navbar-toggler.border-0.d-md-none{ type: :button, data: {bs: {toggle: 'offcanvas', target: '#navOffcanvas'}}, 'aria-label': 'Toggle navigation' }
+      -# Hamburger — opens the right-side offcanvas drawer below xl breakpoint
+      %button.navbar-toggler.border-0.d-xl-none{ type: :button, data: {bs: {toggle: 'offcanvas', target: '#navOffcanvas'}}, 'aria-label': 'Toggle navigation' }
         %span.navbar-toggler-icon
 
-      -# Desktop collapse — shown by navbar-expand-md at md+
+      -# Desktop collapse — shown by navbar-expand-xl at xl+
       .collapse.navbar-collapse#navbar-collapse
         %ul.navbar-nav.me-auto.mb-2.mb-lg-0
           - if (@current_user!=nil) and (GraderConfiguration.show_tasks_to?(@current_user))
@@ -166,6 +166,35 @@
         %li.nav-item= link_to 'Statistics', extended_stat_report_path, class: 'nav-link ps-3 '+active_class_when(controller: :report, action: :extended_stat)
       - elsif @current_user&.problem_setter?
         %li.nav-item= link_to 'Report', extended_stat_report_path, class: 'nav-link '+active_class_when(controller: :report, action: :extended_stat)
+      -# Utility links section
+      %span.nav-section-label Tools
+      %li.nav-item
+        %a.nav-link.d-flex.align-items-center.gap-2{href: help_path}
+          %span.mi.md-18 help
+          Help
+      - if GraderConfiguration.message_enabled? || @current_user&.admin?
+        %li.nav-item
+          %a.nav-link.d-flex.align-items-center.gap-2{href: messages_path}
+            %span.mi.md-18 chat
+            Messages
+      - if GraderConfiguration['system.user_setting_enabled'] && @current_user
+        %li.nav-item
+          %a.nav-link.d-flex.align-items-center.gap-2{href: profile_users_path}
+            %span.mi.md-18 settings
+            Settings
+        %li.nav-item.px-2.py-1
+          %span.badge.bg-success.rounded-pill.d-inline-flex.align-items-center.gap-2.px-3{style: 'height: 32px;'}
+            %span.mi.md-18{style: 'line-height: 1; color: inherit !important;'} stars
+            %span.fw-bold{style: 'line-height: 1;'}
+              = "Points: #{number_with_precision(@current_user.current_score, precision: 2, strip_insignificant_zeros: true)}"
+      - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:report).any?)
+        %li.nav-item.px-2.py-1
+          - if @current_user.admin?
+            = link_to "#{@backlog} backlogs!", grader_processes_path, class: 'btn btn-warning btn-sm w-100 mb-1', data: {toggle: 'tooltip'}, title: 'Ungraded submissions'
+          = form_with id: :view_sub_form_mobile, url: list_main_path, method: :get do |f|
+            .input-group.input-group-sm
+              %input#view_sub_num_mobile.form-control{type: :text, placeholder: 'Submission #'}
+              %button.btn.btn-secondary{type: :button, onclick: "go_to_sub_mobile();"} Go
     .drawer-footer
       - if @current_user
         = link_to logout_main_path, class: 'nav-link d-flex align-items-center gap-2' do
@@ -195,6 +224,13 @@
 
   function go_to_sub() {
     sub_num = $('#view_sub_num').val();
+    if (!isNaN(sub_num) && !isNaN(parseFloat(sub_num))) {
+      window.location.href = "#{submission_path(-1234)}".replace('-1234',parseInt(sub_num))
+    }
+  }
+
+  function go_to_sub_mobile() {
+    sub_num = $('#view_sub_num_mobile').val();
     if (!isNaN(sub_num) && !isNaN(parseFloat(sub_num))) {
       window.location.href = "#{submission_path(-1234)}".replace('-1234',parseInt(sub_num))
     }

@@ -1,9 +1,12 @@
-// Theme: Dark — modern dark mode with high contrast text
+// ============================================
+// Theme: Dark
+// A modern dark mode with high contrast text
+// ============================================
 
 [data-theme="dark"] {
   --tag-mix-color: #ffffff;
   --tag-mix-amount: 45%;
-  // Bootstrap & core
+  // Bootstrap & Core Overrides
   --bs-body-bg: #1a1a2e;
   --bs-body-color: #e0e0e0;
   --bs-emphasis-color: #f0f0f0;
@@ -20,7 +23,7 @@
   --bs-tertiary-bg: #1f1f3a;
   --color-inner-surface: #222b45;
 
-  // Color palette
+  // Redefine Bootstrap colors for full component support
   --bs-primary: #4a9eff;
   --bs-primary-rgb: 74, 158, 255;
   --bs-primary-bg-subtle: rgba(74, 158, 255, 0.1);
@@ -51,7 +54,7 @@
   --bs-dark: #0f1a2e;
   --bs-dark-rgb: 15, 26, 46;
 
-  // Custom token overrides
+  // Custom property overrides from globals.scss
   --color-primary: #4a9eff;
   --color-primary-dark: #6ea8fe;
   --color-primary-light: #9ec5fe;
@@ -94,11 +97,11 @@
   --color-limit-danger-bg: #e74c3c;
   --color-limit-text: #fff;
 
-  // Body
+  // Body & General
   background-color: #1a1a2e !important;
   color: #e0e0e0;
 
-  // Utilities
+  // Subtle color utilities
   .text-muted { color: #8e99a4 !important; }
   .text-secondary { color: #8e99a4 !important; }
   .text-body { color: #e0e0e0 !important; }
