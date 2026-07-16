@@ -14,3 +14,11 @@ rescue StandardError => e
   Rails.logger.error("Could not determine APP_VERSION_SUFFIX: #{e.message}")
   "N/A"
 end
+
+# fork version
+FORK_VERSION = begin
+  File.read(Rails.root.join("FORK_VERSION")).chomp
+rescue StandardError => e
+  Rails.logger.error("Could not determine FORK_VERSION: #{e.message}")
+  "N/A"
+end

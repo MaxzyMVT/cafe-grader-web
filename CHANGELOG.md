@@ -10,6 +10,9 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+## [4.4.2-cedt03.1] — 2026-07-15
+
+
 Everything below is the **CEDT03 fork's delta over upstream nattee `v4.4.2`**
 (fork version `4.4.2-cedt03.1`) — new gamification/reporting features, the
 `GraderConfiguration` settings and DB columns that back them, and structural /

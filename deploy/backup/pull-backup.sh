@@ -99,15 +99,34 @@ fetch() {  # fetch <host> <localdir> <file>...
   "${SSH[@]}" "$SSH_USER@$h" "rm -f $*" >/dev/null 2>&1 || true
 }
 
-# --- Check space before taking backup to prevent hitting 100% capacity -----------
-# Estimate backup size: database size (rough estimate ~100MB) + /storage directory size
-# Best-effort: only measurable if APP_DIR points at a path on THIS control box
-# (storage normally lives on the remote server, so this stays 0 in the usual pull
-# setup and the DB-size padding below carries the estimate).
-STORAGE_SIZE_KB=0
-if [ -n "${APP_DIR:-}" ] && [ -d "${APP_DIR}/storage" ]; then
-  STORAGE_SIZE_KB=$(du -s "${APP_DIR}/storage" | awk '{print $1}')
+# --- Check remote memory before taking backup to prevent OOM crash -----------
+echo "Checking remote memory..."
+REMOTE_MEM_SCRIPT='free | awk '\''/Mem:/ {print $7}'\'''
+REMOTE_AVAIL_MEM=$(run_remote "$WEB_DB_HOST" "$REMOTE_MEM_SCRIPT" || echo 9999999)
+REMOTE_AVAIL_MEM=$(echo "$REMOTE_AVAIL_MEM" | tr -d '\r\n' | grep -E '^[0-9]+$' || echo 9999999)
+
+if [ "$REMOTE_AVAIL_MEM" -lt 102400 ]; then # less than 100MB
+  echo "ERROR: Remote server is extremely low on memory ($((REMOTE_AVAIL_MEM/1024)) MB available). Skipping backup to prevent OOM crash."
+  exit 1
 fi
+
+# --- Check space before taking backup to prevent hitting 100% capacity -----------
+# Estimate backup size: database size (rough estimate ~100MB) + /storage directory size on remote server
+echo "Estimating backup size from remote storage..."
+DETECT_SCRIPT='
+APP=""
+for d in /root/cafe_grader/web /home/*/cafe_grader/web /opt/cafe_grader/web /root/cafe-grader-web /home/*/cafe-grader-web /var/www/cafe-grader-web /opt/cafe-grader-web; do
+  [ -d "$d" ] && { APP="$d"; break; }
+done
+if [ -n "$APP" ] && [ -d "$APP/storage" ]; then
+  du -s "$APP/storage" | awk "{print \$1}"
+else
+  echo 0
+fi
+'
+STORAGE_SIZE_KB=$(run_remote "$WEB_DB_HOST" "$DETECT_SCRIPT" || echo 0)
+STORAGE_SIZE_KB=$(echo "$STORAGE_SIZE_KB" | tr -d '\r\n' | grep -E '^[0-9]+$' || echo 0)
+
 # Conservative estimated backup size in KB (compressed to ~50% average)
 ESTIMATED_BACKUP_KB=$(( (STORAGE_SIZE_KB + 204800) / 2 ))
 # Available space on backup drive in KB
